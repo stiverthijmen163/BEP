@@ -62,9 +62,6 @@ def wider_face_collector(txt_loc: str) -> pd.DataFrame:
             image_path = line
             bbs = []
         elif len(line.split()) == 10 and not len([i for i in line.split() if int(i) == 0]) == 10:  # Lines containing a bounding box and ignore annotations of all zero's
-            # if len([i for i in line.split() if int(i) == 0]) == 10:  # Ignore annotations of all zero's
-            #     continue
-            # Append bounding box
             bbs.append(line)
 
         count += 1
@@ -142,6 +139,29 @@ def wider_face() -> None:
     wider_face_df_to_yolo(df_val, "val")
 
 
+def fdd_kaggle() -> None:
+    """
+    Main runner for wider face dataset, accesses data and copies all data to the correct location.
+    """
+    # Initializes path variables
+    img_src_path = "../data/Face-Detection-Dataset (Kaggle)/images"
+    lbl_src_path = "../data/Face-Detection-Dataset (Kaggle)/labels"
+    dest_path = "data/Face-Detection-Dataset (Kaggle)"
+
+    # Distinct in train and validation dataset
+    for t in ["train", "val"]:
+        # Initialize new path variables
+        img_path = f"{img_src_path}/{t}"
+        lbl_path = f"{lbl_src_path}/{t}"
+        dest = f"{dest_path}/{t}"
+
+        # Collect image paths
+        images = os.listdir(img_path)
+
+        # Copy images and labels to correct location
+        copy_data(images, img_path, lbl_path, dest)
+
+
 def exists_files(overwrite: bool) -> bool:
     """
     Checks whether all directories needed exist, assumes that all files exist if main folder exists.
@@ -157,12 +177,13 @@ def exists_files(overwrite: bool) -> bool:
     # Initialize variable
     create = False
 
-    # When 'overwrite', remove all existing files
+    # When 'overwrite', recreate file directories
     if overwrite:
-        shutil.rmtree("data", ignore_errors=True)
         create = True
     else:  # Check if all destination folders exist
         if not os.path.exists("data/wider_face"):  # wider face dataset
+            create = True
+        elif not os.path.exists("data/Face-Detection-Dataset (Kaggle)"):  # Face-Detection-Dataset from Kaggle
             create = True
 
     # Create all directories needed for the face_detection section
@@ -176,11 +197,36 @@ def make_dirs() -> None:
     """
     Creates all folders needed for processing the data.
     """
+    # Remove all existing files
+    print("Removing old files...")
+    shutil.rmtree("data", ignore_errors=True)
+
     # Directories for wider face dataset
+    print("Creating new directories...")
     os.makedirs("data/wider_face/train/images")
     os.makedirs("data/wider_face/train/labels")
     os.makedirs("data/wider_face/val/images")
     os.makedirs("data/wider_face/val/labels")
+
+    # Directories for Face-Detection-Dataset from Kaggle
+    os.makedirs("data/Face-Detection-Dataset (Kaggle)/train/images")
+    os.makedirs("data/Face-Detection-Dataset (Kaggle)/train/labels")
+    os.makedirs("data/Face-Detection-Dataset (Kaggle)/val/images")
+    os.makedirs("data/Face-Detection-Dataset (Kaggle)/val/labels")
+
+
+def copy_data(images: List[str], src_img: str, src_lbl: str, dest: str) -> None:
+    """
+    Copies images and their corresponding labels to new locations.
+
+    :param images: list of image paths
+    :param src_img: source image path
+    :param src_lbl: source label path, labels are expected in txt files
+    :param dest: destination path
+    """
+    for img in tqdm(images, desc="copying data", ncols=100):
+        shutil.copy(f"{src_img}/{img}", f"{dest}/images/{img}")
+        shutil.copy(f"{src_lbl}/{img[:-4]}.txt", f"{dest}/labels/{img[:-4]}.txt")
 
 
 def main_process_data(overwrite: bool) -> None:
@@ -190,7 +236,10 @@ def main_process_data(overwrite: bool) -> None:
     :param overwrite: whether to overwrite previous actions, thus removing all data and starting over
     """
     if exists_files(overwrite):
+        print("Processing data from WIDER-face dataset...")
         wider_face()
+        print("\nProcessing data from Face-Detection-Dataset from Kaggle...")
+        fdd_kaggle()
 
 
 if __name__ == '__main__':
