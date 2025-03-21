@@ -3,3 +3,5 @@ roboflow==1.1.56
 matplotlib==3.10.1
 opencv-python==4.11.0.86
 tqdm==4.67.1
+pandas==2.2.3
+face-recognition==1.3.0

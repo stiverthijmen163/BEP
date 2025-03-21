@@ -2,3 +2,4 @@
 /face_detection/models
 /.idea
 /data
+*.pt

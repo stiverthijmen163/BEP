@@ -93,7 +93,7 @@ if __name__ == '__main__':
 
     hyp = {
         "epochs": 10,
-        "imgsz": 640,
+        "imgsz": 1280,
         "task": "detect",
         "device": 0,
         "plots": True,
@@ -101,11 +101,28 @@ if __name__ == '__main__':
 
     model = YOLO("yolov8s.pt")
     results = model.train(
+            batch=-1,
             **hyp,  # Hyperparameters
             project="models",  # Name of the folder to store models in
-            name="YOLOv8s",  # Name of the run
-            data="data/kaggle-Face-Detection-Dataset//data.yaml"  # Path to the dataset
+            name="YOLOv8s1280",  # Name of the run
+            data="data/Face-Detection-Dataset (Kaggle)/data.yaml"  # Path to the dataset
         )
+
+    # Class
+    # Images
+    # Instances
+    # Box(P
+    # R
+    # mAP50
+    # mAP50 - 95): 100 % |██████████ | 101 / 101[00:25 < 00:00, 4.03
+    # it / s]
+    # all
+    # 3225
+    # 39671
+    # 0.845
+    # 0.573
+    # 0.657
+    # 0.361
 
     # for f in os.listdir("data/kaggle-Face-Detection-Dataset/val/images"):
     #     print(f)
