@@ -1,11 +1,16 @@
 import cv2
 from ultralytics import YOLO
+from ultralytics.utils import LOGGER
+import ultralytics
 from roboflow import Roboflow
 import os
 from tqdm import tqdm
 # import matplotlib.pyplot as plt
 # import cv2
 # import shutil
+import wandb
+import yaml
+import pathlib
 
 
 def load_yolo_annotations(annotations_path):
@@ -80,8 +85,75 @@ def bounding_boxes_to_yolo(path_to_images: str, path_to_labels: str):
             file.close()
 
 
+def create_yaml_file(yaml_path: str) -> None:
+    """
+    Creates a YAML file.
+    :param yaml_path:
+    :return:
+    """
+    doc = {
+        "names": ["face"],
+        "nc": 1,
+        "train": "train/images",
+        "val": "val/images",
+        "path": f"{str(pathlib.Path().resolve())}/{'/'.join(yaml_path.split('/')[:-1])}",
+    }
+
+    print(doc)
+    with open(yaml_path, "w") as f:
+        yaml.dump(doc, f)
 
 
+def try_different_models():
+    models = ["yolov5s.pt", "yolov6s.pt", "yolov7s.pt", "yolov8s.pt", "yolov9s.pt", "yolov10s.pt", "yolo11s.pt", "yolo12s.pt"]
+    team_name = "t-m-a-broeren-eindhoven-university-of-technology"
+    create_yaml_file("data/small_subset/data.yaml")
+    project_name = "yolo_versions"
+    ultralytics.settings.update({"wandb": True})
+
+    for m in models:
+        config = {
+            "learning_rate": "auto",
+            "architecture": f"{m[:-3]}",
+            "dataset": "small_subset",
+            "epochs": 10,
+            "imgsz": 640,
+        }
+
+        run_name = f"v_{m[:-3]}"
+
+        # Initialize wandb run
+        wandb.init(
+            entity=team_name,
+            project=project_name,
+            name=run_name,
+            config=config
+        )
+
+        hyp = {
+            "data": "data/small_subset/data.yaml",
+            "epochs": 10,
+            "imgsz": 640,
+            "task": "detect",
+            "device": 0,
+            "plots": True,
+        }
+
+        # Log hyperparameters to wandb
+        wandb.config.update(hyp)
+
+        model = YOLO(m)
+        results = model.train(
+                **hyp,  # Hyperparameters
+                project=wandb.run.project,
+                name=wandb.run.name,
+                exist_ok=True,
+                tracker="wandb"
+                # project="models",  # Name of the folder to store models in
+                # name="YOLOv8s1280",  # Name of the run
+                # data="data/small_subset/data.yaml"  # Path to the dataset
+            )
+        wandb.finish()
 
 
 if __name__ == '__main__':
@@ -91,22 +163,58 @@ if __name__ == '__main__':
     # bounding_boxes_to_yolo("data/kaggle-Face-Detection-Dataset/train/images", "data/kaggle-Face-Detection-Dataset/train/labels")
     # bounding_boxes_to_yolo("data/kaggle-Face-Detection-Dataset/val/images", "data/kaggle-Face-Detection-Dataset/val/labels")
 
-    hyp = {
-        "epochs": 10,
-        "imgsz": 1280,
-        "task": "detect",
-        "device": 0,
-        "plots": True,
-    }
+    try_different_models()
 
-    model = YOLO("yolov8s.pt")
-    results = model.train(
-            batch=-1,
-            **hyp,  # Hyperparameters
-            project="models",  # Name of the folder to store models in
-            name="YOLOv8s1280",  # Name of the run
-            data="data/Face-Detection-Dataset (Kaggle)/data.yaml"  # Path to the dataset
-        )
+    # LOGGER.info(f"WandB Enabled: {wandb.run is not None}")
+    # ultralytics.settings.update({"wandb": True})
+    # create_yaml_file("data/small_subset/data.yaml")
+    #
+    # config = {
+    #     "learning_rate": "auto",
+    #     "architecture": "YOLOv8s",
+    #     "dataset": "small_subset",
+    #     "epochs": 10,
+    #     "imgsz": 640,
+    # }
+    #
+    # team_name = "t-m-a-broeren-eindhoven-university-of-technology"
+    # project_name = "yolo_versions"
+    # run_name = "v_yolov8s"
+    #
+    # # Initialize wandb run
+    # wandb.init(
+    #     entity=team_name,
+    #     project=project_name,
+    #     name=run_name,
+    #     config=config
+    # )
+    #
+    # hyp = {
+    #     "data": "data/small_subset/data.yaml",
+    #     "epochs": 10,
+    #     "imgsz": 640,
+    #     "task": "detect",
+    #     "device": 0,
+    #     "plots": True,
+    # }
+    #
+    # # Log hyperparameters to wandb
+    # wandb.config.update(hyp)
+    #
+    # model = YOLO("yolov8s.pt")
+    # results = model.train(
+    #         **hyp,  # Hyperparameters
+    #         project=wandb.run.project,
+    #         name=wandb.run.name,
+    #         exist_ok=True,
+    #         # tracker="wandb"
+    #         # project="models",  # Name of the folder to store models in
+    #         # name="YOLOv8s1280",  # Name of the run
+    #         # data="data/small_subset/data.yaml"  # Path to the dataset
+    #     )
+    # wandb.finish()
+
+
 
     # Class
     # Images
