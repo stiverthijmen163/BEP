@@ -99,28 +99,29 @@ def create_yaml_file(yaml_path: str) -> None:
         "path": f"{str(pathlib.Path().resolve())}/{'/'.join(yaml_path.split('/')[:-1])}",
     }
 
-    print(doc)
     with open(yaml_path, "w") as f:
         yaml.dump(doc, f)
 
 
 def try_different_models():
-    models = ["yolov5s.pt", "yolov6s.pt", "yolov7s.pt", "yolov8s.pt", "yolov9s.pt", "yolov10s.pt", "yolo11s.pt", "yolo12s.pt"]
+    # models = ["yolov5s.pt", "yolov6s.yaml", "yolov8s.pt", "yolov9s.pt", "yolov10s.pt", "yolo11s.pt", "yolo12s.pt"]
+    models = ["yolov8s.pt"]
     team_name = "t-m-a-broeren-eindhoven-university-of-technology"
-    create_yaml_file("data/small_subset/data.yaml")
-    project_name = "yolo_versions"
+    create_yaml_file("data/subset/data.yaml")
+    project_name = "yolo_subset"
     ultralytics.settings.update({"wandb": True})
 
     for m in models:
+        model_name = m.split(".")[0]
         config = {
             "learning_rate": "auto",
-            "architecture": f"{m[:-3]}",
-            "dataset": "small_subset",
-            "epochs": 10,
+            "architecture": model_name,
+            "dataset": "subset",
+            "epochs": 300,
             "imgsz": 640,
         }
 
-        run_name = f"v_{m[:-3]}"
+        run_name = f"v_{model_name}"
 
         # Initialize wandb run
         wandb.init(
@@ -131,12 +132,14 @@ def try_different_models():
         )
 
         hyp = {
-            "data": "data/small_subset/data.yaml",
-            "epochs": 10,
+            "data": "data/subset/data.yaml",
+            "epochs": 300,
             "imgsz": 640,
             "task": "detect",
             "device": 0,
             "plots": True,
+            "save_period": 1,
+            "patience": 10
         }
 
         # Log hyperparameters to wandb
@@ -201,7 +204,7 @@ if __name__ == '__main__':
     # # Log hyperparameters to wandb
     # wandb.config.update(hyp)
     #
-    # model = YOLO("yolov8s.pt")
+    # model = YOLO("yolov7.pt")
     # results = model.train(
     #         **hyp,  # Hyperparameters
     #         project=wandb.run.project,

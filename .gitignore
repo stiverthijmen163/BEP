@@ -3,3 +3,6 @@
 /.idea
 /data
 *.pt
+/face_detection/wandb
+/face_detection/yolo_subset
+/face_detection/yolo_versions

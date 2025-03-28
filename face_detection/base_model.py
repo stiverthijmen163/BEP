@@ -5,6 +5,7 @@ from PIL import Image, UnidentifiedImageError
 import face_recognition
 import dlib
 import cv2
+from typing import List
 
 
 def overlap_ratio(box1, box2):
@@ -49,8 +50,8 @@ def detect_faces_haar_cascade_recognition(img0: cv2.Mat):
     # Combine and filter faces based on overlap
     all_faces = list(haar_faces) + fr_faces
 
-    print(f"Haar faces detected: {haar_faces}")
-    print(f"face_recognition faces detected: {fr_faces}")
+    # print(f"Haar faces detected: {haar_faces}")
+    # print(f"face_recognition faces detected: {fr_faces}")
 
     unique_faces = []
     for face in all_faces:
@@ -58,6 +59,21 @@ def detect_faces_haar_cascade_recognition(img0: cv2.Mat):
             unique_faces.append(face)
 
     return unique_faces
+
+
+def annotations_on_img(img: cv2.Mat, save_path: str) -> None:
+    """
+
+    :param img:
+    :param ann:
+    :param save_path:
+    """
+    res = detect_faces_haar_cascade_recognition(img)
+    for box in res:
+        x, y, width, height = box
+        cv2.rectangle(img, (x, y), (x + width, y + height), (255, 0, 0), thickness=2)
+
+    cv2.imwrite(save_path, img)
 
 
 if __name__ == '__main__':
