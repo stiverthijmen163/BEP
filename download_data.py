@@ -6,6 +6,8 @@ import requests
 from PIL import Image
 import io
 from tqdm import tqdm
+import kagglehub
+import shutil
 
 
 def download_img_from_url(folder: str, dataframe: pd.DataFrame, id_column: str, url_column: str):
@@ -41,6 +43,44 @@ def download_img_from_url(folder: str, dataframe: pd.DataFrame, id_column: str, 
     print(f"Failed downloading {count} images")
 
 
+def download_from_kaggle(kaggle_path: str, output_path: str) -> None:
+    """
+
+    """
+    # Create output path if it doesn't exist
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
+    # Download latest version
+    path = kagglehub.dataset_download(kaggle_path)
+    shutil.move(path, output_path)
+
+
+def main_download_data():
+    """
+
+    """
+    # df = pd.read_parquet("data/Embedding_On_The_Wall/full_df_clf_corrected.parquet")
+    # download_img_from_url("data/Embedding_On_The_Wall/full_images", df, "id", "img_link")
+
+    kaggle_datasets = [
+        "vishesh1412/celebrity-face-image-dataset"
+    ]
+
+    output_paths = [
+        "data/celebrity-face-image-dataset"
+    ]
+
+    for k, o in zip(kaggle_datasets, output_paths):
+        download_from_kaggle(k, o)
+
+
 if __name__ == '__main__':
-    df = pd.read_parquet("data/Embedding_On_The_Wall/full_df_clf_corrected.parquet")
-    download_img_from_url("data/Embedding_On_The_Wall/full_images", df, "id", "img_link")
+    main_download_data()
+    # df = pd.read_parquet("data/Embedding_On_The_Wall/full_df_clf_corrected.parquet")
+    # download_img_from_url("data/Embedding_On_The_Wall/full_images", df, "id", "img_link")
+
+    # # Download latest version
+    # path = kagglehub.dataset_download("vishesh1412/celebrity-face-image-dataset")
+    # shutil.move(path, output_path)
+    # print("Path to dataset files:", path)

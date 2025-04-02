@@ -16,3 +16,10 @@ PyYAML==6.0.2
 openpyxl~=3.1.5
 insightface==0.7.3
 onnxruntime==1.21.0
+tensorflow==2.19.0
+beautifulsoup4==4.13.3
+kagglehub==0.3.10
+scipy==1.15.2
+chinese-whispers==0.9.0
+networkx==3.4.2
+chinese_whispers==0.9.0
