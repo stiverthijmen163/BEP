@@ -242,38 +242,38 @@ def main_process_data(overwrite: bool) -> None:
         print("\nProcessing data from Face-Detection-Dataset from Kaggle...")
         fdd_kaggle()
 
-    # os.makedirs("data/small_subset/train/images")
-    # os.makedirs("data/small_subset/train/labels")
-    # os.makedirs("data/small_subset/val/images")
-    # os.makedirs("data/small_subset/val/labels")
-    #
-    # source = "data/Face-Detection-Dataset (Kaggle)/train/images"
-    # source_l = "data/Face-Detection-Dataset (Kaggle)/train/labels"
-    # dst = "data/small_subset/train"
-    # random.seed(123)
-    # img_train = random.sample(os.listdir(source), 500)
-    # copy_data(img_train, source, source_l, dst)
-    #
-    # source = "data/Face-Detection-Dataset (Kaggle)/val/images"
-    # source_l = "data/Face-Detection-Dataset (Kaggle)/val/labels"
-    # dst = "data/small_subset/val"
-    # random.seed(123)
-    # img_val = random.sample(os.listdir(source), 100)
-    # copy_data(img_val, source, source_l, dst)
-    #
-    # source = "data/wider_face/train/images"
-    # source_l = "data/wider_face/train/labels"
-    # dst = "data/small_subset/train"
-    # random.seed(123)
-    # img_train = random.sample(os.listdir(source), 500)
-    # copy_data(img_train, source, source_l, dst)
-    #
-    # source = "data/wider_face/val/images"
-    # source_l = "data/wider_face/val/labels"
-    # dst = "data/small_subset/val"
-    # random.seed(123)
-    # img_val = random.sample(os.listdir(source), 100)
-    # copy_data(img_val, source, source_l, dst)
+    os.makedirs("data/small_subset/train/images")
+    os.makedirs("data/small_subset/train/labels")
+    os.makedirs("data/small_subset/val/images")
+    os.makedirs("data/small_subset/val/labels")
+
+    source = "data/Face-Detection-Dataset (Kaggle)/train/images"
+    source_l = "data/Face-Detection-Dataset (Kaggle)/train/labels"
+    dst = "data/small_subset/train"
+    random.seed(123)
+    img_train = random.sample(os.listdir(source), 500)
+    copy_data(img_train, source, source_l, dst)
+
+    source = "data/Face-Detection-Dataset (Kaggle)/val/images"
+    source_l = "data/Face-Detection-Dataset (Kaggle)/val/labels"
+    dst = "data/small_subset/val"
+    random.seed(123)
+    img_val = random.sample(os.listdir(source), 100)
+    copy_data(img_val, source, source_l, dst)
+
+    source = "data/wider_face/train/images"
+    source_l = "data/wider_face/train/labels"
+    dst = "data/small_subset/train"
+    random.seed(123)
+    img_train = random.sample(os.listdir(source), 500)
+    copy_data(img_train, source, source_l, dst)
+
+    source = "data/wider_face/val/images"
+    source_l = "data/wider_face/val/labels"
+    dst = "data/small_subset/val"
+    random.seed(123)
+    img_val = random.sample(os.listdir(source), 100)
+    copy_data(img_val, source, source_l, dst)
 
 
 
