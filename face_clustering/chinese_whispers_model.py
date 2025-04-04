@@ -7,6 +7,7 @@ import networkx as nx
 from tqdm import tqdm
 import json
 
+
 def extract_face_embeddings(image_paths):
     """Extract face embeddings from images using face_recognition."""
     embeddings = []
@@ -16,6 +17,7 @@ def extract_face_embeddings(image_paths):
         if encodings:
             embeddings.append(encodings[0])
     return embeddings
+
 
 def build_similarity_graph(embeddings, threshold=0.5):
     """Create a NetworkX graph for Chinese Whispers clustering."""
@@ -29,7 +31,7 @@ def build_similarity_graph(embeddings, threshold=0.5):
     # Add edges with similarity weights
     for i in range(num_embeddings):
         for j in range(i + 1, num_embeddings):
-            similarity = 1 - cosine(embeddings[i], embeddings[j])  # Cosine similarity
+            similarity = 1 - cosine(embeddings[i], embeddings[j])  # Cosine similarity<< LOOK AT DIMENSION >>
             # print(similarity)
             if similarity >= threshold:
                 G.add_edge(i, j, weight=similarity)

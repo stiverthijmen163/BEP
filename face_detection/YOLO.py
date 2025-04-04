@@ -105,10 +105,10 @@ def create_yaml_file(yaml_path: str) -> None:
 
 def try_different_models():
     # models = ["yolov5s.pt", "yolov6s.yaml", "yolov8s.pt", "yolov9s.pt", "yolov10s.pt", "yolo11s.pt", "yolo12s.pt"]
-    models = ["yolov8s.pt"]
+    models = ["yolo12n.pt", "yolo12s.pt", "yolo12m.pt", "yolo12l.pt", "yolo12x.pt"]
     team_name = "t-m-a-broeren-eindhoven-university-of-technology"
-    create_yaml_file("data/subset/data.yaml")
-    project_name = "yolo_subset"
+    create_yaml_file("data/small_subset/data.yaml")
+    project_name = "yolo_v12_small_subset"
     ultralytics.settings.update({"wandb": True})
 
     for m in models:
@@ -116,9 +116,10 @@ def try_different_models():
         config = {
             "learning_rate": "auto",
             "architecture": model_name,
-            "dataset": "subset",
-            "epochs": 300,
+            "dataset": "small_subset",
+            "epochs": 10,
             "imgsz": 640,
+            "batch": 0.8
         }
 
         run_name = f"v_{model_name}"
@@ -132,14 +133,15 @@ def try_different_models():
         )
 
         hyp = {
-            "data": "data/subset/data.yaml",
-            "epochs": 300,
+            "data": "data/small_subset/data.yaml",
+            "epochs": 10,
             "imgsz": 640,
             "task": "detect",
             "device": 0,
             "plots": True,
-            "save_period": 1,
-            "patience": 10
+            "batch": 0.8
+            # "save_period": 1,
+            # "patience": 10
         }
 
         # Log hyperparameters to wandb
@@ -159,6 +161,58 @@ def try_different_models():
         wandb.finish()
 
 
+def train_final_yolo_model():
+    team_name = "t-m-a-broeren-eindhoven-university-of-technology"
+    create_yaml_file("data/subset/data.yaml")
+    project_name = "yolo_v12s"
+    ultralytics.settings.update({"wandb": True})
+
+    model_name = "yolov12s-face"
+    config = {
+        "learning_rate": "auto",
+        "architecture": model_name,
+        "dataset": "subset",
+        "epochs": 100,
+        "imgsz": 640
+    }
+
+    # run_name = model_name
+
+    # Initialize wandb run
+    wandb.init(
+        entity=team_name,
+        project=project_name,
+        name=model_name,
+        config=config
+    )
+
+    hyp = {
+        "data": "data/subset/data.yaml",
+        "epochs": 100,
+        "imgsz": 640,
+        "task": "detect",
+        "device": 0,
+        "plots": True,
+        "save_period": 1,
+    }
+
+    # Log hyperparameters to wandb
+    wandb.config.update(hyp)
+
+    model = YOLO("yolo12s.pt")
+    results = model.train(
+        **hyp,  # Hyperparameters
+        project=wandb.run.project,
+        name=wandb.run.name,
+        exist_ok=True,
+        tracker="wandb"
+        # project="models",  # Name of the folder to store models in
+        # name="YOLOv8s1280",  # Name of the run
+        # data="data/small_subset/data.yaml"  # Path to the dataset
+    )
+    wandb.finish()
+
+
 if __name__ == '__main__':
     # set_all_labels_to_face("data/kaggle-Face-Detection-Dataset/train/labels")
     # set_all_labels_to_face("data/kaggle-Face-Detection-Dataset/val/labels")
@@ -166,7 +220,8 @@ if __name__ == '__main__':
     # bounding_boxes_to_yolo("data/kaggle-Face-Detection-Dataset/train/images", "data/kaggle-Face-Detection-Dataset/train/labels")
     # bounding_boxes_to_yolo("data/kaggle-Face-Detection-Dataset/val/images", "data/kaggle-Face-Detection-Dataset/val/labels")
 
-    try_different_models()
+    # try_different_models()
+    train_final_yolo_model()
 
     # LOGGER.info(f"WandB Enabled: {wandb.run is not None}")
     # ultralytics.settings.update({"wandb": True})

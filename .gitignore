@@ -6,3 +6,5 @@
 /face_detection/wandb
 /face_detection/yolo_subset
 /face_detection/yolo_versions
+/face_detection/yolo_v12_small_subset
+/face_detection/yolo_v12s

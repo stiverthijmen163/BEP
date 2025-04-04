@@ -1,5 +1,6 @@
 import cv2
 import insightface.app.common
+import numpy as np
 import pandas as pd
 import pyarrow  # Needed for parquet files
 import fastparquet  # Needed for parquet files
@@ -16,46 +17,67 @@ from ultralytics import YOLO
 import matplotlib.pyplot as plt
 import openpyxl  # Needed for writing xlsx files
 from insightface.app import FaceAnalysis
-
-
-def overlay_mask_cv2(img, mask):
-    # Convert mask to 3 channels
-    if len(mask.shape) == 2:  # Only convert if mask is single-channel
-        mask_colored = cv2.cvtColor(mask * 255, cv2.COLOR_GRAY2BGR)
-    else:
-        mask_colored = mask * 255
-
-    # Blend mask with image
-    overlay = cv2.addWeighted(img, 0.7, mask_colored, 0.3, 0)
-
-    # Show using OpenCV
-    cv2.imshow("Mask Overlay", overlay)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+import time
+from sklearn import metrics
+import seaborn as sns
 
 
 def show_masks(img: cv2.Mat, expected_masks: cv2.Mat, predicted_boxes: List[List[int]], save_path: str) -> None:
     """
+    Creates and saves an images with the expected and predicted bounding boxes.
 
+    :param img: image to plot on
+    :param expected_masks: the expected bounding boxes
+    :param predicted_boxes: the predicted bounding boxes
+    :param save_path: path to save the image to
     """
+    # Convert the expected mask to a colored scale
     mask_colored = expected_masks * 255
 
-    # Blend mask with image
+    # Blend expected mask with image
     overlay = cv2.addWeighted(img, 0.7, mask_colored, 0.3, 0)
+
+    # Plot predicted bounding boxes on image
     for box in predicted_boxes:
         x, y, w, h = box
         cv2.rectangle(overlay, (x, y), (x + w, y + h), (0, 0, 255), 2)
 
+    # Create path to save file if needed
     if not os.path.exists("/".join(save_path.split("/")[:-1])):
         os.makedirs("/".join(save_path.split("/")[:-1]))
 
+    # Save the image
     cv2.imwrite(save_path, overlay)
+
+
+def create_conf_matrix(actual: List[str], predicted: List[str], save_folder: str, model_name: str, threshold: float) -> None:
+    """
+
+    :param actual:
+    :param predicted:
+    :param save_path:
+    :return:
+    """
+    confusion_matrix = metrics.confusion_matrix(actual, predicted, labels=["face", "background"])
+
+    plt.figure(figsize=(7, 6))
+    sns.heatmap(confusion_matrix, annot=True, fmt="g", cmap="Blues", xticklabels=["face", "background"],
+                yticklabels=["face", "background"])
+    plt.xlabel("Predicted", fontsize=12)
+    plt.ylabel("Actual", fontsize=12)
+    plt.title(f"{model_name} with IoU ≥ {threshold}", fontsize=14)
+
+    if not os.path.exists(save_folder):
+        os.makedirs(save_folder)
+
+    plt.savefig(f"{save_folder}/{model_name}_thres_{''.join(str(threshold).split('.'))}.jpg")
 
 
 def iou(img: cv2.Mat, boxes_det: List[List[int]], boxes_exp: List[List[int]], save_path: str = None) -> float:
     """
+    Calculates the Intersection over Union over all predicted bounding boxes in an image.
 
-    :param img:
+    :param img: image
     :param boxes_det:
     :param boxes_exp:
     :return:
@@ -105,13 +127,17 @@ def iou(img: cv2.Mat, boxes_det: List[List[int]], boxes_exp: List[List[int]], sa
     return intersection / union
 
 
-def calc_accuracy(img: cv2.Mat, boxes_det: List[List[int]], boxes_exp: List[List[int]], iou_threshold: float) -> float:
+def calc_accuracy(img: cv2.Mat, boxes_det: List[List[int]], boxes_exp: List[List[int]], iou_threshold: float) -> Tuple[float, List[str], List[str]]:
     """
 
     """
     tp = 0
     fp = 0
     fn = 0
+
+    actual = []
+    predicted = []
+
     for box in boxes_det:
         iou_scores = []
         max_iou = -1
@@ -122,13 +148,18 @@ def calc_accuracy(img: cv2.Mat, boxes_det: List[List[int]], boxes_exp: List[List
             max_iou = max(iou_scores)
         if max_iou >= iou_threshold:
             tp += 1
+            actual.append("face")
+            predicted.append("face")
             boxes_exp.pop(iou_scores.index(max_iou))
         else:
             fp += 1
+            actual.append("background")
+            predicted.append("face")
     fn += len(boxes_exp)
+    actual += ["face"] * len(boxes_exp)
+    predicted += ["background"] * len(boxes_exp)
 
-    return tp / (tp + fp + fn)
-
+    return tp / (tp + fp + fn), actual, predicted
 
 
 def yolo_to_haar(img: cv2.Mat, boxes: List[List[float]]) -> List[List[int]]:
@@ -194,11 +225,19 @@ def test_haar_fr(test_data_path: str, model_name: str) -> List[str | floating]:
     iou_scores = []
     accuracy_scores_05 = []
     accuracy_scores_07 = []
+    runtime = []
+    actual_05 = []
+    predicted_05 = []
+    actual_07 = []
+    predicted_07 = []
+
     for test_img in tqdm(test_images, desc="Testing haar cascade + face recognition model", ncols=100):
         path = f"{test_data_path}/{test_img}"
         img = cv2.imread(path)
 
+        start = time.time()
         predictions = detect_faces_haar_cascade_recognition(img)
+        end = time.time()
         expected_yolo = collect_yolo_ann(path)
         expected = yolo_to_haar(img, expected_yolo)
 
@@ -209,10 +248,26 @@ def test_haar_fr(test_data_path: str, model_name: str) -> List[str | floating]:
         # iou_scores.append(iou_score)
 
         iou_scores.append(iou(img, predictions, expected, f"data/{model_name}/{test_img}"))
-        accuracy_scores_05.append(calc_accuracy(img, predictions.copy(), expected.copy(), 0.5))
-        accuracy_scores_07.append(calc_accuracy(img, predictions.copy(), expected.copy(), 0.7))
+        # accuracy_scores_05.append(calc_accuracy(img, predictions.copy(), expected.copy(), 0.5))
+        # accuracy_scores_07.append(calc_accuracy(img, predictions.copy(), expected.copy(), 0.7))
+        # runtime.append(end - start)
 
-    return [model_name, np.average(iou_scores).round(3), np.average(accuracy_scores_05).round(3), np.average(accuracy_scores_07).round(3)]
+        acc_05, act_05, pred_05 = calc_accuracy(img, predictions.copy(), expected.copy(), 0.5)
+        acc_07, act_07, pred_07 = calc_accuracy(img, predictions.copy(), expected.copy(), 0.7)
+
+        accuracy_scores_05.append(acc_05)
+        accuracy_scores_07.append(acc_07)
+        actual_05 = actual_05 + act_05
+        predicted_05 = predicted_05 + pred_05
+        actual_07 = actual_07 + act_07
+        predicted_07 = predicted_07 + pred_07
+        runtime.append(end - start)
+
+    create_conf_matrix(actual_05, predicted_05, f"plots", "haar cascade + dlib", 0.5)
+    create_conf_matrix(actual_07, predicted_07, f"plots", "haar cascade + dlib", 0.7)
+
+    return [model_name, np.average(iou_scores).round(3), np.average(accuracy_scores_05).round(3),
+            np.average(accuracy_scores_07).round(3), np.average(runtime).round(3)]
 
 
 def test_yolo(test_data_path: str, model_path: str, model_name: str) -> list[str | floating]:
@@ -225,11 +280,19 @@ def test_yolo(test_data_path: str, model_path: str, model_name: str) -> list[str
     iou_scores = []
     accuracy_scores_05 = []
     accuracy_scores_07 = []
+    runtime = []
+    actual_05 = []
+    predicted_05 = []
+    actual_07 = []
+    predicted_07 = []
+    model = YOLO(model_path)
     for test_img in tqdm(test_images, desc=f"Testing YOLO model: ({model_name})", ncols=100):
         path = f"{test_data_path}/{test_img}"
         img = cv2.imread(path)
-        model = YOLO(model_path)
+        # model = YOLO(model_path)
+        start = time.time()
         result = model(img, verbose=False)
+        end = time.time()
 
         predictions = []
         for pred in result:
@@ -250,12 +313,22 @@ def test_yolo(test_data_path: str, model_path: str, model_name: str) -> list[str
         # iou_scores.append(iou_score)
 
         iou_scores.append(iou(img, predictions, expected, f"data/{model_name}/{test_img}"))
-        # print(expected)
-        accuracy_scores_05.append(calc_accuracy(img, predictions.copy(), expected.copy(), 0.5))
-        # print(expected)
-        accuracy_scores_07.append(calc_accuracy(img, predictions.copy(), expected.copy(), 0.7))
+        acc_05, act_05, pred_05 = calc_accuracy(img, predictions.copy(), expected.copy(), 0.5)
+        acc_07, act_07, pred_07 = calc_accuracy(img, predictions.copy(), expected.copy(), 0.7)
+
+        accuracy_scores_05.append(acc_05)
+        accuracy_scores_07.append(acc_07)
+        actual_05 = actual_05 + act_05
+        predicted_05 = predicted_05 + pred_05
+        actual_07 = actual_07 + act_07
+        predicted_07 = predicted_07 + pred_07
+        runtime.append(end - start)
+
+    create_conf_matrix(actual_05, predicted_05, f"plots", model_name, 0.5)
+    create_conf_matrix(actual_07, predicted_07, f"plots", model_name, 0.7)
     # return sum(iou_scores) / len(iou_scores), sum(accuracy_scores) / len(accuracy_scores)
-    return [model_name, np.average(iou_scores).round(3), np.average(accuracy_scores_05).round(3), np.average(accuracy_scores_07).round(3)]
+    return [model_name, np.average(iou_scores).round(3), np.average(accuracy_scores_05).round(3),
+            np.average(accuracy_scores_07).round(3), np.average(runtime).round(3)]
 
 
 def test_insightface(test_data_path: str, model_name: str) -> list[str | floating]:
@@ -263,6 +336,11 @@ def test_insightface(test_data_path: str, model_name: str) -> list[str | floatin
     iou_scores = []
     accuracy_scores_05 = []
     accuracy_scores_07 = []
+    runtime = []
+    actual_05 = []
+    predicted_05 = []
+    actual_07 = []
+    predicted_07 = []
 
     app = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
     app.prepare(ctx_id=0, det_size=(640, 640))
@@ -271,18 +349,64 @@ def test_insightface(test_data_path: str, model_name: str) -> list[str | floatin
         path = f"{test_data_path}/{test_img}"
         img = cv2.imread(path)
 
+        start = time.time()
         faces = app.get(img)
+        end = time.time()
 
         predictions = insightface_to_haar(faces)
         expected_yolo = collect_yolo_ann(path)
         expected = yolo_to_haar(img, expected_yolo)
 
         iou_scores.append(iou(img, predictions, expected, f"data/{model_name}/{test_img}"))
-        accuracy_scores_05.append(calc_accuracy(img, predictions.copy(), expected.copy(), 0.5))
-        accuracy_scores_07.append(calc_accuracy(img, predictions.copy(), expected.copy(), 0.7))
+        acc_05, act_05, pred_05 = calc_accuracy(img, predictions.copy(), expected.copy(), 0.5)
+        acc_07, act_07, pred_07 = calc_accuracy(img, predictions.copy(), expected.copy(), 0.7)
+
+        accuracy_scores_05.append(acc_05)
+        accuracy_scores_07.append(acc_07)
+        actual_05 = actual_05 + act_05
+        predicted_05 = predicted_05 + pred_05
+        actual_07 = actual_07 + act_07
+        predicted_07 = predicted_07 + pred_07
+        runtime.append(end - start)
+
+    create_conf_matrix(actual_05, predicted_05, f"plots", "insightface", 0.5)
+    create_conf_matrix(actual_07, predicted_07, f"plots", "insightface", 0.7)
 
     return [model_name, np.average(iou_scores).round(3), np.average(accuracy_scores_05).round(3),
-            np.average(accuracy_scores_07).round(3)]
+            np.average(accuracy_scores_07).round(3), np.average(runtime).round(3)]
+
+
+def main_test_detection() -> None:
+    """
+
+    """
+    results = []
+
+    path = "../data/Face detection.v1i.yolov8/test/images"
+    results.append(test_haar_fr(path, "haar_cascade + dlib (base model)"))
+    # print(f"iou: {iou_score_haar_fr}, acc: {acc_score_haar_fr}")
+
+    results.append(test_insightface(path, "insightface"))
+
+    # model_path = "yolo_versions/v_yolov5s/weights/best.pt"
+    model_path = "downloaded_models/yolov6n-face.pt"
+    results.append(test_yolo(path, model_path, "yolov6n-face"))
+    # print(f"iou: {iou_score_yolo}, acc: {acc_score_yolo}")
+    # model_path = "downloaded models/yolov8n-face.pt"
+
+    model_path = "downloaded_models/yolov11l-face.pt"
+    results.append(test_yolo(path, model_path, "yolov11l-face"))
+
+    model_path = "yolo_v12s/yolov12s-face/weights/epoch60.pt"
+    # model_path = "yolo_v12s/yolov12s-face/weights/best.pt"
+    results.append(test_yolo(path, model_path, "yolov12s-face"))
+    # print(f"iou: {iou_score_yolo_t}, acc: {acc_score_yolo_t}")
+    # acc = calc_accuracy(path, iou_score_yolo)
+
+    df_res = pd.DataFrame(results,
+                          columns=["Model", "IoU (entire image)", "Accuracy (IoU ≥ 0.5)", "Accuracy (IoU ≥ 0.7)",
+                                   "Latency (s)"]).set_index("Model")
+    df_res.to_excel("results_face_detection.xlsx", index=True)
 
 
 if __name__ == '__main__':
@@ -301,36 +425,64 @@ if __name__ == '__main__':
     #     cv2.imshow("RetinaFace Detection", img)
     #     cv2.waitKey(0)
 
+    main_test_detection()
+
+    # PLOT ANNOTATIONS ON TEST IMAGES
+    # test_path = "../data/Face detection.v1i.yolov8/test/images"
+    # test_images = os.listdir(test_path)
+    #
+    # for test_img in tqdm(test_images, desc=f"Testing InsightFace", ncols=100):
+    #     path = f"{test_path}/{test_img}"
+    #     img = cv2.imread(path)
+    #     expected_yolo = collect_yolo_ann(path)
+    #     expected = yolo_to_haar(img, expected_yolo)
+    #
+    #     show_masks(img, np.zeros_like(img), expected, f"../data/FD_test_set_w_annotations_plotted/{test_img}.jpg")
+
+
+
+    # results = []
+    # path = "../data/Face detection.v1i.yolov8/test/images"
+    # for f in os.listdir("yolo_v12s/yolov12s-face/weights"):
+    #     if f.startswith("epoch"):
+    #         if int(f[5:].strip(".pt")) >= 40:
+    #             print(f)
+    #             model_path = f"yolo_v12s/yolov12s-face/weights/{f}"
+    #             results.append(test_yolo(path, model_path, f))
+    #
+    # df_res = pd.DataFrame(results,
+    #                       columns=["Model", "IoU (entire image)", "Accuracy (IoU ≥ 0.5)", "Accuracy (IoU ≥ 0.7)",
+    #                                "latency (s)"])
+    # df_res.to_excel("test_epochs_yolov12s.xlsx")
 
 
 
 
-
-
-    results = []
-
-    path = "../data/Face detection.v1i.yolov8/test/images"
-    results.append(test_haar_fr(path, "haar_cascade + dlib (base model)"))
-    # print(f"iou: {iou_score_haar_fr}, acc: {acc_score_haar_fr}")
-
-    results.append(test_insightface(path, "insightface"))
-
-    # model_path = "yolo_versions/v_yolov5s/weights/best.pt"
-    model_path = "downloaded models/yolov8n-face.pt"
-    results.append(test_yolo(path, model_path, "yolov8n-face"))
-    # print(f"iou: {iou_score_yolo}, acc: {acc_score_yolo}")
-    # model_path = "downloaded models/yolov8n-face.pt"
-
-    model_path = "downloaded models/yolov11l-face.pt"
-    results.append(test_yolo(path, model_path, "yolov11l-face"))
-
-    model_path = "yolo_subset/v_yolov8s/weights/best.pt"
-    results.append(test_yolo(path, model_path, "yolov8s"))
-    # print(f"iou: {iou_score_yolo_t}, acc: {acc_score_yolo_t}")
-    # acc = calc_accuracy(path, iou_score_yolo)
-
-    df_res = pd.DataFrame(results, columns=["Model", "IoU (entire image)", "Accuracy (IoU ≥ 0.5)", "Accuracy (IoU ≥ 0.7)"])
-    df_res.to_excel("results_face_detection.xlsx")
+    # results = []
+    #
+    # path = "../data/Face detection.v1i.yolov8/test/images"
+    # results.append(test_haar_fr(path, "haar_cascade + dlib (base model)"))
+    # # print(f"iou: {iou_score_haar_fr}, acc: {acc_score_haar_fr}")
+    #
+    # results.append(test_insightface(path, "insightface"))
+    #
+    # # model_path = "yolo_versions/v_yolov5s/weights/best.pt"
+    # model_path = "downloaded_models/yolov6n-face.pt"
+    # results.append(test_yolo(path, model_path, "yolov6n-face"))
+    # # print(f"iou: {iou_score_yolo}, acc: {acc_score_yolo}")
+    # # model_path = "downloaded models/yolov8n-face.pt"
+    #
+    # model_path = "downloaded_models/yolov11l-face.pt"
+    # results.append(test_yolo(path, model_path, "yolov11l-face"))
+    #
+    # # model_path = "yolo_subset/v_yolov8s/weights/best.pt"
+    # model_path = "yolo_v12s/yolov12s-face/weights/best.pt"
+    # results.append(test_yolo(path, model_path, "yolov12s-face"))
+    # # print(f"iou: {iou_score_yolo_t}, acc: {acc_score_yolo_t}")
+    # # acc = calc_accuracy(path, iou_score_yolo)
+    #
+    # df_res = pd.DataFrame(results, columns=["Model", "IoU (entire image)", "Accuracy (IoU ≥ 0.5)", "Accuracy (IoU ≥ 0.7)", "latency (s)"])
+    # df_res.to_excel("results_face_detection.xlsx")
 
 
 
