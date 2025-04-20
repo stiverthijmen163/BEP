@@ -311,6 +311,6 @@ def main_process_data(overwrite: bool) -> None:
     copy_data(img_val, source, source_l, dst)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     OVERWRITE = False
     main_process_data(OVERWRITE)
