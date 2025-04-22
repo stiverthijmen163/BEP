@@ -61,44 +61,46 @@ def load_embeddings(filename="embeddings.npz"):
 def normalize_embeddings(embeddings):
     return np.array([e / np.linalg.norm(e) for e in embeddings])
 
-# # Example usage:
-# # image_paths = ["face1.jpg", "face2.jpg", "face3.jpg"]  # Replace with actual paths
-# p = "../data/celebrity-face-image-dataset/1/Celebrity Faces Dataset"
-# # Collect all image paths
-# image_paths = [
-#     # f"{root}/{file}"
-#     os.path.join(root, file)
-#     for root, _, files in os.walk(p)
-#     for file in files
-#     if file.lower().endswith((".jpg", ".jpeg", ".png"))
-# ]
-# # image_paths = [f"{p}/{i}" for i in os.listdir(p)]
-# # print(image_paths)
 
-# embeddings = extract_face_embeddings(image_paths)
-# save_embeddings(embeddings, image_paths)
-embeddings, image_paths = load_embeddings()
-# embeddings = normalize_embeddings(embeddings)
-# print(embeddings)
-print(len(embeddings))
-print("Creating graph...")
-G = build_similarity_graph(embeddings)
+if __name__ == "__main__":
+    # # Example usage:
+    # # image_paths = ["face1.jpg", "face2.jpg", "face3.jpg"]  # Replace with actual paths
+    # p = "../data/celebrity-face-image-dataset/1/Celebrity Faces Dataset"
+    # # Collect all image paths
+    # image_paths = [
+    #     # f"{root}/{file}"
+    #     os.path.join(root, file)
+    #     for root, _, files in os.walk(p)
+    #     for file in files
+    #     if file.lower().endswith((".jpg", ".jpeg", ".png"))
+    # ]
+    # # image_paths = [f"{p}/{i}" for i in os.listdir(p)]
+    # # print(image_paths)
 
-# Apply Chinese Whispers clustering
-print("Applying Chinese Whispers...")
-labels = chinese_whispers(G, iterations=100, label_key="label", weighting="top")
-print("Done!")
+    # embeddings = extract_face_embeddings(image_paths)
+    # save_embeddings(embeddings, image_paths)
+    embeddings, image_paths = load_embeddings()
+    # embeddings = normalize_embeddings(embeddings)
+    # print(embeddings)
+    print(len(embeddings))
+    print("Creating graph...")
+    G = build_similarity_graph(embeddings)
 
-print(labels)
-for i in labels:
-    print(i)
-# Group results by cluster
-clusters = {}
-for idx, label in enumerate(labels):
-    # print(idx, label)
-    clusters.setdefault(label, []).append(image_paths[idx])
+    # Apply Chinese Whispers clustering
+    print("Applying Chinese Whispers...")
+    labels = chinese_whispers(G, iterations=100, label_key="label", weighting="top")
+    print("Done!")
 
-# print("Clusters:", clusters)
-print("Nr of clusters: ", len(clusters))
+    print(labels)
+    for i in labels:
+        print(i)
+    # Group results by cluster
+    clusters = {}
+    for idx, label in enumerate(labels):
+        # print(idx, label)
+        clusters.setdefault(label, []).append(image_paths[idx])
 
-save_clusters(clusters)
+    # print("Clusters:", clusters)
+    print("Nr of clusters: ", len(clusters))
+
+    save_clusters(clusters)
