@@ -8,7 +8,6 @@ import os
 
 from numpy import floating
 from tqdm import tqdm
-# from base_model import *
 from base_model import detect_faces_haar_cascade_recognition
 from typing import List, Tuple, Any
 from ultralytics import YOLO

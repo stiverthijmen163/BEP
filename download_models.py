@@ -9,7 +9,7 @@ def download_zip_from_drive(url: str, output: str) -> None:
     Downloads zip-files from Google Drive.
 
     :param url: Google Drive URL to download zip file from
-    :param output: Path to extract zip file to
+    :param output: path to extract zip file to
     """
     # Download zip-file from Google Drive
     gdown.download(url, "temp.zip", fuzzy=True)

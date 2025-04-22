@@ -186,6 +186,10 @@ def exists_files(overwrite: bool) -> bool:
             create = True
         elif not os.path.exists("data/Face-Detection-Dataset (Kaggle)"):  # Face-Detection-Dataset from Kaggle
             create = True
+        elif not os.path.exists("data/small_subset"):  # Small subset
+            create = True
+        elif not os.path.exists("data/subset"):  # Subset
+            create = True
 
     # Create all directories needed for the face_detection section
     if create:
@@ -215,6 +219,18 @@ def make_dirs() -> None:
     os.makedirs("data/Face-Detection-Dataset (Kaggle)/val/images")
     os.makedirs("data/Face-Detection-Dataset (Kaggle)/val/labels")
 
+    # Directories for small subset to train and validate on
+    os.makedirs("data/small_subset/train/images")
+    os.makedirs("data/small_subset/train/labels")
+    os.makedirs("data/small_subset/val/images")
+    os.makedirs("data/small_subset/val/labels")
+
+    # Directories for a subset of the data to train and validate on
+    os.makedirs("data/subset/train/images")
+    os.makedirs("data/subset/train/labels")
+    os.makedirs("data/subset/val/images")
+    os.makedirs("data/subset/val/labels")
+
 
 def copy_data(images: List[str], src_img: str, src_lbl: str, dest: str) -> None:
     """
@@ -230,85 +246,96 @@ def copy_data(images: List[str], src_img: str, src_lbl: str, dest: str) -> None:
         shutil.copy(f"{src_lbl}/{img[:-4]}.txt", f"{dest}/labels/{img[:-4]}.txt")
 
 
+def create_small_subset() -> None:
+    """
+    Creates a small subset of the data to train and validate simple models on.
+    """
+    # Select random data from FDD dataset to train on
+    source = "data/Face-Detection-Dataset (Kaggle)/train/images"
+    source_l = "data/Face-Detection-Dataset (Kaggle)/train/labels"
+    dst = "data/small_subset/train"
+    random.seed(123)
+    img_train = random.sample(os.listdir(source), 500)
+    copy_data(img_train, source, source_l, dst)
+
+    # Select random data from FDD dataset to validate on
+    source = "data/Face-Detection-Dataset (Kaggle)/val/images"
+    source_l = "data/Face-Detection-Dataset (Kaggle)/val/labels"
+    dst = "data/small_subset/val"
+    random.seed(123)
+    img_val = random.sample(os.listdir(source), 100)
+    copy_data(img_val, source, source_l, dst)
+
+    # Select random data from WIDER dataset to train on
+    source = "data/wider_face/train/images"
+    source_l = "data/wider_face/train/labels"
+    dst = "data/small_subset/train"
+    random.seed(123)
+    img_train = random.sample(os.listdir(source), 500)
+    copy_data(img_train, source, source_l, dst)
+
+    # Select random data from WIDER dataset to validate on
+    source = "data/wider_face/val/images"
+    source_l = "data/wider_face/val/labels"
+    dst = "data/small_subset/val"
+    random.seed(123)
+    img_val = random.sample(os.listdir(source), 100)
+    copy_data(img_val, source, source_l, dst)
+
+
+def create_subset() -> None:
+    """
+    Creates a subset of the data to train and validate the final model on.
+    """
+    # Select random data from FDD dataset to train on
+    source = "data/Face-Detection-Dataset (Kaggle)/train/images"
+    source_l = "data/Face-Detection-Dataset (Kaggle)/train/labels"
+    dst = "data/subset/train"
+    random.seed(123)
+    img_train = random.sample(os.listdir(source), 2500)
+    copy_data(img_train, source, source_l, dst)
+
+    # Select random data from FDD dataset to validate on
+    source = "data/Face-Detection-Dataset (Kaggle)/val/images"
+    source_l = "data/Face-Detection-Dataset (Kaggle)/val/labels"
+    dst = "data/subset/val"
+    random.seed(123)
+    img_val = random.sample(os.listdir(source), 500)
+    copy_data(img_val, source, source_l, dst)
+
+    # Select random data from WIDER dataset to train on
+    source = "data/wider_face/train/images"
+    source_l = "data/wider_face/train/labels"
+    dst = "data/subset/train"
+    random.seed(123)
+    img_train = random.sample(os.listdir(source), 2500)
+    copy_data(img_train, source, source_l, dst)
+
+    # Select random data from WIDER dataset to validate on
+    source = "data/wider_face/val/images"
+    source_l = "data/wider_face/val/labels"
+    dst = "data/subset/val"
+    random.seed(123)
+    img_val = random.sample(os.listdir(source), 500)
+    copy_data(img_val, source, source_l, dst)
+
+
 def main_process_data(overwrite: bool) -> None:
     """
     Main runner for processing all data needed for face detection.
 
     :param overwrite: whether to overwrite previous actions, thus removing all data and starting over
     """
+    # Check if files need to be created, and do so if needed
     if exists_files(overwrite):
         print("Processing data from WIDER-face dataset...")
         wider_face()
         print("\nProcessing data from Face-Detection-Dataset from Kaggle...")
         fdd_kaggle()
-
-    os.makedirs("data/small_subset/train/images")
-    os.makedirs("data/small_subset/train/labels")
-    os.makedirs("data/small_subset/val/images")
-    os.makedirs("data/small_subset/val/labels")
-
-    source = "data/Face-Detection-Dataset (Kaggle)/train/images"
-    source_l = "data/Face-Detection-Dataset (Kaggle)/train/labels"
-    dst = "data/small_subset/train"
-    random.seed(123)
-    img_train = random.sample(os.listdir(source), 500)
-    copy_data(img_train, source, source_l, dst)
-
-    source = "data/Face-Detection-Dataset (Kaggle)/val/images"
-    source_l = "data/Face-Detection-Dataset (Kaggle)/val/labels"
-    dst = "data/small_subset/val"
-    random.seed(123)
-    img_val = random.sample(os.listdir(source), 100)
-    copy_data(img_val, source, source_l, dst)
-
-    source = "data/wider_face/train/images"
-    source_l = "data/wider_face/train/labels"
-    dst = "data/small_subset/train"
-    random.seed(123)
-    img_train = random.sample(os.listdir(source), 500)
-    copy_data(img_train, source, source_l, dst)
-
-    source = "data/wider_face/val/images"
-    source_l = "data/wider_face/val/labels"
-    dst = "data/small_subset/val"
-    random.seed(123)
-    img_val = random.sample(os.listdir(source), 100)
-    copy_data(img_val, source, source_l, dst)
-
-
-
-    os.makedirs("data/subset/train/images")
-    os.makedirs("data/subset/train/labels")
-    os.makedirs("data/subset/val/images")
-    os.makedirs("data/subset/val/labels")
-
-    source = "data/Face-Detection-Dataset (Kaggle)/train/images"
-    source_l = "data/Face-Detection-Dataset (Kaggle)/train/labels"
-    dst = "data/subset/train"
-    random.seed(123)
-    img_train = random.sample(os.listdir(source), 2500)
-    copy_data(img_train, source, source_l, dst)
-
-    source = "data/Face-Detection-Dataset (Kaggle)/val/images"
-    source_l = "data/Face-Detection-Dataset (Kaggle)/val/labels"
-    dst = "data/subset/val"
-    random.seed(123)
-    img_val = random.sample(os.listdir(source), 500)
-    copy_data(img_val, source, source_l, dst)
-
-    source = "data/wider_face/train/images"
-    source_l = "data/wider_face/train/labels"
-    dst = "data/subset/train"
-    random.seed(123)
-    img_train = random.sample(os.listdir(source), 2500)
-    copy_data(img_train, source, source_l, dst)
-
-    source = "data/wider_face/val/images"
-    source_l = "data/wider_face/val/labels"
-    dst = "data/subset/val"
-    random.seed(123)
-    img_val = random.sample(os.listdir(source), 500)
-    copy_data(img_val, source, source_l, dst)
+        print("\nCreating a small subset of the data to train and validate simple models on...")
+        create_small_subset()
+        print("\nCreating a subset of the data to train and validate the final model on...")
+        create_subset()
 
 
 if __name__ == "__main__":
