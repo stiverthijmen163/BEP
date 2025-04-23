@@ -1,20 +1,34 @@
 import cv2
 import numpy as np
 import os
-from typing import List
+from typing import List, Tuple
 from deepface import DeepFace
 from tqdm import tqdm
 import face_recognition
-from ultralytics import YOLO
 
 
-# Save embeddings and image paths
-def save_embeddings(embeddings, image_paths, filename="embeddings.npz"):
+def save_embeddings(embeddings :List, image_paths: List[str], filename: str = "embeddings.npz") -> None:
+    """
+    Saves embeddings and their respective image paths.
+
+    :param embeddings: list of embeddings to save
+    :param image_paths: list of image paths respective to the embeddings
+    :param filename: file to save the embeddings to, must be .npz-file
+    """
+    # Save the embeddings as npz file
     np.savez_compressed(filename, embeddings=embeddings, image_paths=image_paths)
     print(f"Embeddings saved to {filename}")
 
 # Load embeddings and image paths
-def load_embeddings(filename="embeddings.npz"):
+def load_embeddings(filename: str = "embeddings.npz") -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Loads embeddings and their respective image paths.
+
+    :param filename: file to load the embeddings from, must be .npz-file
+
+    :return: embeddings and their respective image paths
+    """
+    # Load the .npz file
     data = np.load(filename, allow_pickle=True)
     return data["embeddings"], data["image_paths"]
 
@@ -59,43 +73,48 @@ def extract_face_recognition_embeddings(face_paths: List[str], save_folder: str)
     :param face_paths: List of paths to face images.
     :param save_folder: Folder to save face embeddings.
     """
+    # Create save directory if needed
+    if not os.path.isdir(save_folder):
+        os.mkdir(save_folder)
+
     # Create empty list of embeddings
     embeddings = []
 
     # Calculate embedding for each image
-    for image_path in tqdm(face_paths, desc="extracting face embeddings", ncols=100):
+    for image_path in tqdm(face_paths, desc="extracting face embeddings using face-recognition", ncols=100):
         # Read the image
-        # image = face_recognition.load_image_file(image_path)
         image = cv2.imread(image_path)
-
-        model = YOLO("yolo_v12s/yolov12s-face/weights/epoch60.pt")
-        result = model(image, verbose=False)
+        height, width = image.shape[:2]
 
         # Embed the image
-        encodings = face_recognition.face_encodings(image, num_jitters=2, model="large")
+        encodings = face_recognition.face_encodings(image, num_jitters=2, model="large",
+                                                    known_face_locations=[(0,width,height,0)])
 
         # Append embedding to the result
         if encodings:
             embeddings.append(encodings[0])
 
+    # Save the embeddings
     save_embeddings(embeddings, face_paths, filename=f"{save_folder}/face_recognition_embeddings.npz")
 
 
 def main_calc_face_embeddings() -> None:
     """
-
+    Main runner for calculating all face embeddings
     """
     # Folder to find all images in
-    p = "../data/celebrity-face-image-dataset"
+    p = "data/celebrity-face-image-dataset"
 
     # Find all image paths in this folder
     image_paths = [
-        # f"{root}/{file}"
         os.path.join(root, file)
         for root, _, files in os.walk(p)
         for file in files
         if file.lower().endswith((".jpg", ".jpeg", ".png"))
     ]
+
+    # Generate the face embeddings for all images using face-recognition
+    extract_face_recognition_embeddings(image_paths, "face_embeddings")
 
     # Generate the face embeddings for all images using different models
     generate_face_embeddings(image_paths, "face_embeddings")
