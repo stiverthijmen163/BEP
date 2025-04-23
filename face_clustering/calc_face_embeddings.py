@@ -5,6 +5,10 @@ from typing import List, Tuple
 from deepface import DeepFace
 from tqdm import tqdm
 import face_recognition
+import pandas as pd
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
+import sqlite3
 
 
 def save_embeddings(embeddings :List, image_paths: List[str], filename: str = "embeddings.npz") -> None:
@@ -107,7 +111,7 @@ def main_calc_face_embeddings() -> None:
 
     # Find all image paths in this folder
     image_paths = [
-        os.path.join(root, file)
+        os.path.join(root, file).replace("\\", "/")
         for root, _, files in os.walk(p)
         for file in files
         if file.lower().endswith((".jpg", ".jpeg", ".png"))
@@ -120,5 +124,55 @@ def main_calc_face_embeddings() -> None:
     generate_face_embeddings(image_paths, "face_embeddings")
 
 
+def main_process_face_embeddings() -> None:
+    """
+    Saves all embeddings to SQL database and reduces them to 2 dimensions.
+    """
+    # Create connection to the database
+    database_file = "face_embeddings/data.db"
+    os.makedirs(os.path.dirname(database_file), exist_ok=True)
+    conn = sqlite3.connect(database_file)
+
+    # Load in embeddings for each model
+    for p in os.listdir("face_embeddings"):
+        if p.endswith(".npz"):
+            # Load embeddings
+            emb, paths = load_embeddings(f"face_embeddings/{p}")
+
+            # Reduce embeddings by using TSNE
+            tsne = TSNE(n_components=2)
+            emb_tsne = tsne.fit_transform(emb)
+
+            # Reduce embeddings by using PCA
+            pca = PCA(n_components=2)
+            emb_pca = pca.fit_transform(emb)
+
+            # Collect the name of the model used for page name
+            model = "_".join(p.split("_")[:-1])
+
+            # Create a dataframe containing all embeddings
+            res = pd.DataFrame({
+                "id_path": paths,
+                "embedding": [",".join(map(str, e.tolist())) for e in emb],
+                "embedding_pca": [",".join(map(str, e.tolist())) for e in emb_pca],
+                "embedding_tsne": [",".join(map(str, e.tolist())) for e in emb_tsne],
+            })
+
+            # Save df to SQL database
+            res.to_sql(model, conn, if_exists="replace")
+
+    # Collect the person for each path
+    persons = [path.split("/")[-2] for path in paths]
+
+    # Create a dataframe containing all persons
+    res = pd.DataFrame({
+        "id_path": paths,
+        "person": persons
+    })
+
+    # save df to SQL database
+    res.to_sql("persons", conn, if_exists="replace")
+
 if __name__ == "__main__":
     main_calc_face_embeddings()
+    main_process_face_embeddings()
