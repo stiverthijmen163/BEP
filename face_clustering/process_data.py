@@ -149,6 +149,17 @@ def main_process_data() -> None:
     # Process the data
     process_images_celebrity(image_paths)
 
+    # Remove identified faces which are no faces
+    ids = [
+        "data/celebrity-face-image-dataset/Scarlett Johansson/077_776d5e0f_0.jpg",
+        "data/celebrity-face-image-dataset/Scarlett Johansson/182_56820995_0.jpg",
+        "data/celebrity-face-image-dataset/Tom Cruise/080_566ea9e9_0.jpg"
+    ]
+
+    for id in ids:
+        if os.path.exists(id):
+            os.remove(id)
+
 
 if __name__ == "__main__":
     main_process_data()
