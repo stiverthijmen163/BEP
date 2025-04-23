@@ -148,7 +148,7 @@ def main_process_face_embeddings() -> None:
             emb_pca = pca.fit_transform(emb)
 
             # Collect the name of the model used for page name
-            model = "_".join(p.split("_")[:-1])
+            model = "_".join(p.split("_")[:-1]).replace("-", "_")
 
             # Create a dataframe containing all embeddings
             res = pd.DataFrame({
