@@ -14,9 +14,9 @@ def check_performance_dbscan(df: pd.DataFrame) -> Tuple[float, float]:
     """
     Uses performance metrics to check the performance or clustering algorithms.
 
-    :param df: dataframe containing the actual and predicted clusters.
+    :param df: dataframe containing the actual and predicted clusters
 
-    :return: the adjusted rand score and fowlkes mallows score.
+    :return: the adjusted rand score and fowlkes mallows score
     """
     # Similarity between two clustering algorithms
     ari = adjusted_rand_score(df["person"], df["cluster"])
