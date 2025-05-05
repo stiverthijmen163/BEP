@@ -252,10 +252,11 @@ class Detector(html.Div):
                                 'backgroundColor': '#2196F3',
                                 'color': 'white',
                                 'cursor': 'pointer',
-                                "width": "20vw"
+                                "width": "20vw",
+                                "marginBottom": "20px",
                             },
                             id="button2"
-                        ),
+                        )
                         # html.Button(id="box_images0_left", style={}),
                         # html.Button(id="box_images0_right", style={})
                     ]

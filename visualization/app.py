@@ -1,4 +1,5 @@
 from dash import Dash
+import dash_bootstrap_components as dbc
 
 external_stylesheets = [
     {
@@ -9,6 +10,7 @@ external_stylesheets = [
         "rel": "stylesheet",
         "href": "https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css",
     },
+    dbc.themes.BOOTSTRAP
 ]
 
 app = Dash(__name__, use_pages=True, external_stylesheets=external_stylesheets)

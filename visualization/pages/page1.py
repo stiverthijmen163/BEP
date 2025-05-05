@@ -1,5 +1,6 @@
 import dash
 from dash import html, register_page, callback, Output, Input, dcc, State, ctx, ALL
+import dash_bootstrap_components as dbc
 import tkinter as tk
 from tkinter import filedialog
 import threading
@@ -10,9 +11,17 @@ import numpy as np
 import cv2
 import pandas as pd
 import time
+import face_recognition
+# import dlib
+
+from sympy.codegen.fnodes import allocatable
+
 from visualization.detection import Detector
+from visualization.clustering import Clusteror
 
 df0 = None
+df1 = None
+cls0 = None
 register_page(__name__, path="/")
 
 # # Folder picker function
@@ -23,6 +32,7 @@ register_page(__name__, path="/")
 #     return folder_path
 
 det0 = Detector("det0", df0)
+# cls0 = Clusteror("cls0", df0)
 
 
 layout = html.Div(
@@ -57,7 +67,9 @@ layout = html.Div(
                 )
             ]
         ),
-        det0
+        det0,
+        html.Div(id="placeholder_cls0", children=[], style={"textAlign": "center"}),
+        dcc.Interval(id='progress_timer', interval=500, disabled=True),
     ]
 )
 
@@ -86,6 +98,28 @@ def images_to_db(contents, filename):
 
     return len(df0)
 
+
+def db0_to_db1():
+    """
+
+    """
+    print("Transforming database...")
+    df_use_faces = det0.df_faces[det0.df_faces["use"] == True].copy()
+    faces = []
+    for _, row in df_use_faces.iterrows():
+        id = row["img_id"]
+        img = det0.df[det0.df["id"] == id]["img"].copy().to_list()[0]
+        box = row["face"]
+        x, y, w, h = box
+        # print(img)
+        # print(box)
+        face = img[y:y + h, x:x + w]
+        faces.append(face)
+
+    df_use_faces["img"] = faces
+    print("DONE")
+
+    return df_use_faces.reset_index()
 
 
 
@@ -140,7 +174,9 @@ def update_output(contents, filename):
             ),
             dcc.Store(id="trigger-computation"),
             dcc.Store(id="trigger-next-button0"),
-            dcc.Store(id="change_or_clicked_image")
+            dcc.Store(id="change_or_clicked_image"),
+            dcc.Store(id="progressbar_cls"),
+            dcc.Store(id="trigger_update")
         ])
 
     return "No files uploaded yet."
@@ -302,6 +338,144 @@ def process_checklist_values(show_nrs_val, checklist_values, selected_data, data
     # keep_flags = [("keep" in value) for value in checklist_values]
     return det0.update_picture_fig(show_nrs_val, checklist_values, trigger_id, selected_data, current_children)  # or however you want to use them
 
+@callback(
+    Output("placeholder_cls0", "children", allow_duplicate=True),
+    Output("progressbar_cls", "data", allow_duplicate=True),
+    Output("progress_timer", "disabled", allow_duplicate=True),
+    Output("button2", "disabled", allow_duplicate=True),
+    Output("button2", "style", allow_duplicate=True),
+    Input("button2", "n_clicks"),
+    prevent_initial_call=True
+)
+def react_on_button2(n_clicks):
+    if n_clicks is not None and n_clicks > 0:
+        global df1
+        df1 = db0_to_db1().copy()
+        # global cls0
+        # cls0 = Clusteror("cls0", det0.df, det0.df_faces)
+        size = len(df1)
+        result = html.Div([
+            html.H2("Face Clustering", style={"textAlign": "center"}),
+            html.Hr(),
+            # dcc.Interval(id='progress_timer', interval=500, disabled=False),
+            dbc.Progress(
+                id="progressbar0",
+                label="0%",
+                value=0,
+                striped=True,
+                animated=True,
+                color="#2196F3",
+                style={
+                    "width": "99%",
+                    "height": "30px",
+                    "margin": "10px auto",
+                    "marginBottom": "10px"
+                }
+            )
+        ])
+        data = {"mode": "running", "size": size, "n": 0, "embeddings": []}
+        style = {
+            'padding': '10px 20px',
+            'fontSize': '16pt',
+            'borderRadius': '12px',
+            'border': 'none',
+            'backgroundColor': '#2196F3',
+            'color': 'white',
+            'cursor': 'pointer',
+            "width": "20vw",
+            "opacity": 0.5,
+            "marginBottom": "20px"
+        }
+
+        return result, data, False, True, style
+    else:
+        return dash.no_update, dash.no_update, False, False, dash.no_update
+
+
+@callback(
+    Output("progressbar0", "value", allow_duplicate=True),
+    Output("progressbar0", "label", allow_duplicate=True),
+    Output("progressbar_cls", "data", allow_duplicate=True),
+    Output("progress_timer", "disabled", allow_duplicate=True),
+    Output("trigger_update", "data", allow_duplicate=True),
+    Output("button2", "disabled", allow_duplicate=True),
+    Output("button2", "style", allow_duplicate=True),
+    # Input("progress_timer", "n_intervals"),
+    Input("trigger_update", "data"),
+    State("progressbar_cls", "data"),
+    # Input("trigger_update", "data"),
+    prevent_initial_call=True
+)
+def update_progress_bar(trigger, data):
+    if data is not None and "embeddings" in data:
+        if data["mode"] == "running":
+            global df1
+            # if "embeddings" in data:
+            n = data["n"]
+            print(n)
+            # if n >= data["size"]:
+            #     data["mode"] = "DONE"
+            #     return dash.no_update, dash.no_update, data, True, dash.no_update
+
+            image = np.ascontiguousarray(df1.iloc[n]["img"])
+            height, width = image.shape[:2]
+            # print(image)
+            # print(image.shape[:2])
+
+            encoding = face_recognition.face_encodings(image, num_jitters=2, model="large", known_face_locations=[(0, width, height, 0)])
+            # encoding = face_encoder.compute_face_descriptor(face_image, raw_landmark_set, num_jitters)
+            data["embeddings"].append(encoding[0])
+            data["n"] += 1
+            new_val = 100 * (n + 1) / data['size']
+
+            if data["n"] >= data["size"]:
+                data["mode"] = "DONE"
+                style = {
+                    'padding': '10px 20px',
+                    'fontSize': '16pt',
+                    'borderRadius': '12px',
+                    'border': 'none',
+                    'backgroundColor': '#2196F3',
+                    'color': 'white',
+                    'cursor': 'pointer',
+                    "width": "20vw",
+                    "marginBottom": "20px"
+                }
+
+                return new_val, f"{new_val:.1f}%", data, True, dash.no_update, False, style
+            return new_val, f"{new_val:.1f}%", data, False, False, True, dash.no_update
+    else:
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+
+@callback(
+    Output("progress_timer", "disabled", allow_duplicate=True),
+    Output("trigger_update", "data", allow_duplicate=True),
+    Input("progress_timer", "n_intervals"),
+    prevent_initial_call=True
+)
+def disabled_interval(_):
+    return True, True
+
+
+
+# @callback(
+#     Output("trigger_update", "data"),
+#     Input("progressbar0", "value"),
+#     State("trigger_update", "data"),
+# )
+# def trigger_update(value, data):
+#     if data:
+#         data = False
+#     else:
+#         data = True
+#
+#     return data
+# for _, row in df1:
+#     image = np.ascontiguousarray(row["img"])
+#     height, width = image.shape[:2]
+#     encoding = face_recognition.face_encodings(image, num_jitters=2, model="large",
+#                                                known_face_locations=[(0, width, height, 0)])
 
 # @callback(
 #     Output('selected-folder-path', 'children', allow_duplicate=True),
