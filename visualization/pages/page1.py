@@ -12,7 +12,8 @@ import cv2
 import pandas as pd
 import time
 import face_recognition
-# import dlib
+from sklearn.manifold import TSNE
+from visualization.functions import *
 
 from sympy.codegen.fnodes import allocatable
 
@@ -400,6 +401,7 @@ def react_on_button2(n_clicks):
     Output("trigger_update", "data", allow_duplicate=True),
     Output("button2", "disabled", allow_duplicate=True),
     Output("button2", "style", allow_duplicate=True),
+    Output("placeholder_cls0", "children", allow_duplicate=True),
     # Input("progress_timer", "n_intervals"),
     Input("trigger_update", "data"),
     State("progressbar_cls", "data"),
@@ -409,7 +411,9 @@ def react_on_button2(n_clicks):
 def update_progress_bar(trigger, data):
     if data is not None and "embeddings" in data:
         if data["mode"] == "running":
+            global df0
             global df1
+            global cls0
             # if "embeddings" in data:
             n = data["n"]
             print(n)
@@ -425,6 +429,7 @@ def update_progress_bar(trigger, data):
             encoding = face_recognition.face_encodings(image, num_jitters=2, model="large", known_face_locations=[(0, width, height, 0)])
             # encoding = face_encoder.compute_face_descriptor(face_image, raw_landmark_set, num_jitters)
             data["embeddings"].append(encoding[0])
+            # data["embeddings_tsne"].append(tsne.fit_transform(encoding[0].reshape(1, -1)))
             data["n"] += 1
             new_val = 100 * (n + 1) / data['size']
 
@@ -442,10 +447,22 @@ def update_progress_bar(trigger, data):
                     "marginBottom": "20px"
                 }
 
-                return new_val, f"{new_val:.1f}%", data, True, dash.no_update, False, style
-            return new_val, f"{new_val:.1f}%", data, False, False, True, dash.no_update
+                df1["embedding"] = data["embeddings"]
+                # save_embeddings(data["embeddings"], [str(i) for i in range(len(data["embeddings"]))], filename=f"temp_embeddings.npz")
+                # emb, paths = load_embeddings(f"temp_embeddings.npz")
+                tsne = TSNE(n_components=2, perplexity=min(30.0, len(data["embeddings"]) - 1))
+                emb_tsne = tsne.fit_transform(np.array(data["embeddings"]))
+                df1["tsne_x"] = emb_tsne[:, 0]
+                df1["tsne_y"] = emb_tsne[:, 1]
+
+                df1["embedding_tsne"] = [",".join(map(str, e.tolist())) for e in emb_tsne]
+                print(df1)
+
+                cls0 = Clusteror("cls0", df0, df1)
+                return new_val, f"{new_val:.1f}%", data, True, dash.no_update, False, style, cls0
+            return new_val, f"{new_val:.1f}%", data, False, False, True, dash.no_update, dash.no_update
     else:
-        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
 @callback(
