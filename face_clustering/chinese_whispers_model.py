@@ -6,17 +6,19 @@ import os
 import networkx as nx
 from tqdm import tqdm
 import json
+from explore_embeddings import collect_data
+from dbscan import check_performance_dbscan
 
 
-def extract_face_embeddings(image_paths):
-    """Extract face embeddings from images using face_recognition."""
-    embeddings = []
-    for image_path in tqdm(image_paths, desc="extracting face embeddings", ncols=100):
-        image = face_recognition.load_image_file(image_path)
-        encodings = face_recognition.face_encodings(image, num_jitters=2, model="large")
-        if encodings:
-            embeddings.append(encodings[0])
-    return embeddings
+# def extract_face_embeddings(image_paths):
+#     """Extract face embeddings from images using face_recognition."""
+#     embeddings = []
+#     for image_path in tqdm(image_paths, desc="extracting face embeddings", ncols=100):
+#         image = face_recognition.load_image_file(image_path)
+#         encodings = face_recognition.face_encodings(image, num_jitters=2, model="large")
+#         if encodings:
+#             embeddings.append(encodings[0])
+#     return embeddings
 
 
 def build_similarity_graph(embeddings, threshold=0.5):
@@ -31,7 +33,8 @@ def build_similarity_graph(embeddings, threshold=0.5):
     # Add edges with similarity weights
     for i in range(num_embeddings):
         for j in range(i + 1, num_embeddings):
-            similarity = 1 - cosine(embeddings[i], embeddings[j])  # Cosine similarity<< LOOK AT DIMENSION >>
+            # similarity = 1 - cosine(embeddings[i], embeddings[j])  # Cosine similarity<< LOOK AT DIMENSION >>
+            similarity = np.absolute(1 - np.linalg.norm(embeddings[i] - embeddings[j]))
             # print(similarity)
             if similarity >= threshold:
                 G.add_edge(i, j, weight=similarity)
@@ -39,30 +42,53 @@ def build_similarity_graph(embeddings, threshold=0.5):
     return G
 
 
-def save_clusters(clusters, filename="clusters.json"):
-    with open(filename, "w") as f:
-        json.dump(clusters, f, indent=4)
-
-
-def load_clusters(filename="clusters.json"):
-    with open(filename, "r") as f:
-        return json.load(f)
-
-# Save embeddings and image paths
-def save_embeddings(embeddings, image_paths, filename="embeddings.npz"):
-    np.savez_compressed(filename, embeddings=embeddings, image_paths=image_paths)
-    print(f"Embeddings saved to {filename}")
-
-# Load embeddings and image paths
-def load_embeddings(filename="embeddings.npz"):
-    data = np.load(filename, allow_pickle=True)
-    return data["embeddings"], data["image_paths"]
+# def save_clusters(clusters, filename="clusters.json"):
+#     with open(filename, "w") as f:
+#         json.dump(clusters, f, indent=4)
+#
+#
+# def load_clusters(filename="clusters.json"):
+#     with open(filename, "r") as f:
+#         return json.load(f)
+#
+# # Save embeddings and image paths
+# def save_embeddings(embeddings, image_paths, filename="embeddings.npz"):
+#     np.savez_compressed(filename, embeddings=embeddings, image_paths=image_paths)
+#     print(f"Embeddings saved to {filename}")
+#
+# # Load embeddings and image paths
+# def load_embeddings(filename="embeddings.npz"):
+#     data = np.load(filename, allow_pickle=True)
+#     return data["embeddings"], data["image_paths"]
 
 def normalize_embeddings(embeddings):
     return np.array([e / np.linalg.norm(e) for e in embeddings])
 
 
+def main() -> None:
+    models = ["ArcFace", "Dlib", "Facenet", "face_recognition", "VGG_Face"]
+    for m in models:
+        print(m)
+        data = collect_data(m)
+
+        embeddings = normalize_embeddings(np.array(data["embedding_tsne"].tolist()))
+
+        G = build_similarity_graph(embeddings, threshold=0.0)
+
+        G0 = chinese_whispers(G, iterations=100, label_key="label", weighting="top")
+
+        # print(labels)
+        # for i in labels:
+        #     print(i)
+
+        labels = [G0.nodes[i]["label"] for i in range(len(G0.nodes))]
+        print(labels)
+        print(set(labels))
+
+
+
 if __name__ == "__main__":
+    main()
     # # Example usage:
     # # image_paths = ["face1.jpg", "face2.jpg", "face3.jpg"]  # Replace with actual paths
     # p = "../data/celebrity-face-image-dataset/1/Celebrity Faces Dataset"
@@ -79,28 +105,31 @@ if __name__ == "__main__":
 
     # embeddings = extract_face_embeddings(image_paths)
     # save_embeddings(embeddings, image_paths)
-    embeddings, image_paths = load_embeddings()
-    # embeddings = normalize_embeddings(embeddings)
-    # print(embeddings)
-    print(len(embeddings))
-    print("Creating graph...")
-    G = build_similarity_graph(embeddings)
 
-    # Apply Chinese Whispers clustering
-    print("Applying Chinese Whispers...")
-    labels = chinese_whispers(G, iterations=100, label_key="label", weighting="top")
-    print("Done!")
 
-    print(labels)
-    for i in labels:
-        print(i)
-    # Group results by cluster
-    clusters = {}
-    for idx, label in enumerate(labels):
-        # print(idx, label)
-        clusters.setdefault(label, []).append(image_paths[idx])
 
-    # print("Clusters:", clusters)
-    print("Nr of clusters: ", len(clusters))
-
-    save_clusters(clusters)
+    # embeddings, image_paths = load_embeddings()
+    # # embeddings = normalize_embeddings(embeddings)
+    # # print(embeddings)
+    # print(len(embeddings))
+    # print("Creating graph...")
+    # G = build_similarity_graph(embeddings)
+    #
+    # # Apply Chinese Whispers clustering
+    # print("Applying Chinese Whispers...")
+    # labels = chinese_whispers(G, iterations=100, label_key="label", weighting="top")
+    # print("Done!")
+    #
+    # print(labels)
+    # for i in labels:
+    #     print(i)
+    # # Group results by cluster
+    # clusters = {}
+    # for idx, label in enumerate(labels):
+    #     # print(idx, label)
+    #     clusters.setdefault(label, []).append(image_paths[idx])
+    #
+    # # print("Clusters:", clusters)
+    # print("Nr of clusters: ", len(clusters))
+    #
+    # save_clusters(clusters)
