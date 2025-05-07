@@ -19,8 +19,13 @@ def collect_data(model_name: str) -> pd.DataFrame:
     conn = sqlite3.connect(database_file)
 
     # Create query
+    # q = f"""
+    # SELECT m.id_path, embedding, embedding_pca, embedding_tsne, person
+    # FROM {model_name} AS m, persons AS p
+    # WHERE m.id_path == p.id_path
+    # """
     q = f"""
-    SELECT m.id_path, embedding, embedding_pca, embedding_tsne, person
+    SELECT m.id_path, embedding, embedding_tsne, person
     FROM {model_name} AS m, persons AS p
     WHERE m.id_path == p.id_path
     """
@@ -31,7 +36,7 @@ def collect_data(model_name: str) -> pd.DataFrame:
     # Set embeddings to preferred format
     df["embedding"] = df["embedding"].apply(lambda x: np.fromstring(x, sep=","))
     df["embedding_tsne"] = df["embedding_tsne"].apply(lambda x: np.fromstring(x, sep=","))
-    df["embedding_pca"] = df["embedding_pca"].apply(lambda x: np.fromstring(x, sep=","))
+    # df["embedding_pca"] = df["embedding_pca"].apply(lambda x: np.fromstring(x, sep=","))
 
     return df
 
@@ -91,12 +96,12 @@ def main_plot_embeddings() -> None:
             # Plot the t-SNE reduced embeddings
             plot_cluster(df, p, "t-SNE")
 
-            # Set the x and y for the PCA reduced embeddings
-            df["x"] = df["embedding_pca"].apply(lambda lst: lst[0])
-            df["y"] = df["embedding_pca"].apply(lambda lst: lst[1])
-
-            # Plot the PCA reduced embeddings
-            plot_cluster(df, p, "PCA")
+            # # Set the x and y for the PCA reduced embeddings
+            # df["x"] = df["embedding_pca"].apply(lambda lst: lst[0])
+            # df["y"] = df["embedding_pca"].apply(lambda lst: lst[1])
+            #
+            # # Plot the PCA reduced embeddings
+            # plot_cluster(df, p, "PCA")
 
 
 if __name__ == "__main__":

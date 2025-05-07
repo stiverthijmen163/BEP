@@ -37,12 +37,13 @@ def load_embeddings(filename: str = "embeddings.npz") -> Tuple[np.ndarray, np.nd
     return data["embeddings"], data["image_paths"]
 
 
-def generate_face_embeddings(face_paths: List[str], save_folder: str) -> None:
+def generate_face_embeddings(face_paths: List[str], save_folder: str, ds: str = "") -> None:
     """
     Calculates face embeddings using different models and saves them with in the save folder.
 
     :param face_paths: List of paths to face images.
     :param save_folder: Folder to save face embeddings.
+    :param ds: dataset used
     """
     # Create save directory if needed
     if not os.path.isdir(save_folder):
@@ -67,15 +68,16 @@ def generate_face_embeddings(face_paths: List[str], save_folder: str) -> None:
             embeddings.append(embedding[0]["embedding"])
 
         # Save embeddings
-        save_embeddings(embeddings, face_paths, filename=f"{save_folder}/{model}_embeddings.npz")
+        save_embeddings(embeddings, face_paths, filename=f"{save_folder}/{ds}_{model}_embeddings.npz")
 
 
-def extract_face_recognition_embeddings(face_paths: List[str], save_folder: str) -> None:
+def extract_face_recognition_embeddings(face_paths: List[str], save_folder: str, ds: str = "") -> None:
     """
     Extracts face embeddings from images using face_recognition.
 
     :param face_paths: List of paths to face images.
     :param save_folder: Folder to save face embeddings.
+    :param ds: dataset used
     """
     # Create save directory if needed
     if not os.path.isdir(save_folder):
@@ -99,29 +101,49 @@ def extract_face_recognition_embeddings(face_paths: List[str], save_folder: str)
             embeddings.append(encodings[0])
 
     # Save the embeddings
-    save_embeddings(embeddings, face_paths, filename=f"{save_folder}/face_recognition_embeddings.npz")
+    save_embeddings(embeddings, face_paths, filename=f"{save_folder}/{ds}_face_recognition_embeddings.npz")
 
 
 def main_calc_face_embeddings() -> None:
     """
     Main runner for calculating all face embeddings
     """
+    # # Folder to find all images in
+    # p = "data/celebrity-face-image-dataset"
+    #
+    # # Find all image paths in this folder
+    # image_paths = [
+    #     os.path.join(root, file).replace("\\", "/")
+    #     for root, _, files in os.walk(p)
+    #     for file in files
+    #     if file.lower().endswith((".jpg", ".jpeg", ".png"))
+    # ]
+    #
+    # # Generate the face embeddings for all images using face-recognition
+    # extract_face_recognition_embeddings(image_paths, "face_embeddings")
+    #
+    # # Generate the face embeddings for all images using different models
+    # generate_face_embeddings(image_paths, "face_embeddings")
+
+    # Second dataset
     # Folder to find all images in
-    p = "data/celebrity-face-image-dataset"
+    p = "../data/Embedding_On_The_Wall/svc_classification_corrected"
 
     # Find all image paths in this folder
     image_paths = [
         os.path.join(root, file).replace("\\", "/")
         for root, _, files in os.walk(p)
+        if "unknown" not in root.lower()
         for file in files
         if file.lower().endswith((".jpg", ".jpeg", ".png"))
     ]
+    # print(image_paths)
 
     # Generate the face embeddings for all images using face-recognition
-    extract_face_recognition_embeddings(image_paths, "face_embeddings")
+    extract_face_recognition_embeddings(image_paths, "face_embeddings", ds="Wies")
 
     # Generate the face embeddings for all images using different models
-    generate_face_embeddings(image_paths, "face_embeddings")
+    generate_face_embeddings(image_paths, "face_embeddings", ds="Wies")
 
 
 def main_process_face_embeddings() -> None:
@@ -132,6 +154,9 @@ def main_process_face_embeddings() -> None:
     database_file = "face_embeddings/data.db"
     os.makedirs(os.path.dirname(database_file), exist_ok=True)
     conn = sqlite3.connect(database_file)
+
+    # Set a list to hold all paths
+    paths0 = []
 
     # Load in embeddings for each model
     for p in os.listdir("face_embeddings"):
@@ -144,8 +169,8 @@ def main_process_face_embeddings() -> None:
             emb_tsne = tsne.fit_transform(emb)
 
             # Reduce embeddings by using PCA
-            pca = PCA(n_components=2)
-            emb_pca = pca.fit_transform(emb)
+            # pca = PCA(n_components=2)
+            # emb_pca = pca.fit_transform(emb)
 
             # Collect the name of the model used for page name
             model = "_".join(p.split("_")[:-1]).replace("-", "_")
@@ -154,19 +179,23 @@ def main_process_face_embeddings() -> None:
             res = pd.DataFrame({
                 "id_path": paths,
                 "embedding": [",".join(map(str, e.tolist())) for e in emb],
-                "embedding_pca": [",".join(map(str, e.tolist())) for e in emb_pca],
+                # "embedding_pca": [",".join(map(str, e.tolist())) for e in emb_pca],
                 "embedding_tsne": [",".join(map(str, e.tolist())) for e in emb_tsne],
             })
 
             # Save df to SQL database
             res.to_sql(model, conn, if_exists="replace")
 
+            # Update the list of paths
+            paths0.extend(paths)
+            paths0 = list(set(paths0))
+
     # Collect the person for each path
-    persons = [path.split("/")[-2] for path in paths]
+    persons = [path.split("/")[-2] for path in paths0]
 
     # Create a dataframe containing all persons
     res = pd.DataFrame({
-        "id_path": paths,
+        "id_path": paths0,
         "person": persons
     })
 
@@ -174,5 +203,5 @@ def main_process_face_embeddings() -> None:
     res.to_sql("persons", conn, if_exists="replace")
 
 if __name__ == "__main__":
-    main_calc_face_embeddings()
+    # main_calc_face_embeddings()
     main_process_face_embeddings()
