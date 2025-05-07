@@ -447,7 +447,8 @@ def update_progress_bar(trigger, data):
                     "marginBottom": "20px"
                 }
 
-                df1["embedding"] = data["embeddings"]
+                df1["embedding"] = [",".join(map(str, e.tolist())) for e in np.array(data["embeddings"])]
+                # df1["embedding"] = data["embeddings"]
                 # save_embeddings(data["embeddings"], [str(i) for i in range(len(data["embeddings"]))], filename=f"temp_embeddings.npz")
                 # emb, paths = load_embeddings(f"temp_embeddings.npz")
                 tsne = TSNE(n_components=2, perplexity=min(30.0, len(data["embeddings"]) - 1))
