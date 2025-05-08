@@ -1,6 +1,7 @@
 import pandas as pd
 import dash
 from dash import dcc, html, callback, Output, Input, State
+import dash_bootstrap_components as dbc
 import plotly.express as px
 import plotly.graph_objects as go
 import cv2
@@ -17,6 +18,8 @@ class Detector(html.Div):
         self.df_faces = None
         self.show_nrs = False
         self.selected_image = None
+        self.df_detected = None
+        self.min_size = (0,0)
         if df is None:
             self.df = None
         else:
@@ -67,6 +70,12 @@ class Detector(html.Div):
 
         self.df["img_w_faces"] = images_faces
         self.df["faces"] = detected
+
+        self.df_faces["width"] = self.df_faces["face"].apply(lambda x: list(x)[2])
+        self.df_faces["height"] = self.df_faces["face"].apply(lambda x: list(x)[3])
+        # self.df_faces["detect"] = True
+
+        self.df_detected = self.df_faces.copy()
 
         if length > 10:
             nr = 10
@@ -130,7 +139,7 @@ class Detector(html.Div):
                         html.Div([
                             html.Div("", style={"flex": 1}),  # Left spacer
 
-                            html.Div(html.P("Select an image or Continue", style={
+                            html.Div(html.P("Select an image to edit or Continue", style={
                                 "fontSize": "16pt",
                                 "marginBottom": "5px",
                                 "textAlign": "center",
@@ -206,7 +215,7 @@ class Detector(html.Div):
                                 dcc.Graph(
                                     id=f"{self.html_id}_fig",
                                     style={'flex': '1',
-                                           "height": "20vw"}  # Takes available space
+                                           "height": "22vw"}  # Takes available space
                                 ),
                                 html.Div(
                                     style={
@@ -215,7 +224,7 @@ class Detector(html.Div):
                                         'borderRadius': '12px',
                                         'border': '2px black solid',
                                         'textAlign': 'center',
-                                        "height": "20vw"
+                                        "height": "22vw"
                                     },
                                     children=[
                                         html.P("Select which detections you want to use, or draw your own detection in the figure on the left.",
@@ -227,6 +236,67 @@ class Detector(html.Div):
                                                "fontWeight": "bold"
                                            }
                                         ),
+                                        html.Div([
+                                            html.P(
+                                                [
+                                                    "min_size:",
+                                                    html.I(className="fa-solid fa-circle-question",
+                                                           id="info_icon_min_size0",
+                                                           style={"cursor": "pointer", "color": "#0d6efd",
+                                                                  "marginLeft": "5px",
+                                                                  "position": "relative",
+                                                                  "top": "-3px"
+                                                                  }),
+                                                    " width:",
+                                                    dcc.Input(
+                                                        id="min_width_det_input",
+                                                        type="number",
+                                                        min=0,
+                                                        max=max(self.df_faces["width"]),
+                                                        step=1,
+                                                        value=0,
+                                                        style={"marginLeft": "10px", "width": "8%"}
+                                                    ),
+                                                    " height:",
+                                                    dcc.Input(
+                                                        id="min_height_det_input",
+                                                        type="number",
+                                                        min=0,
+                                                        max=max(self.df_faces["height"]),
+                                                        step=1,
+                                                        value=0,
+                                                        style={"marginLeft": "10px", "width": "8%"}
+                                                    ),
+                                                    html.Button(
+                                                        "Update detections",
+                                                        disabled=False,
+                                                        style={
+                                                            'padding': '10px 20px',
+                                                            'fontSize': '16pt',
+                                                            'borderRadius': '12px',
+                                                            'border': 'none',
+                                                            'backgroundColor': '#2196F3',
+                                                            'color': 'white',
+                                                            'cursor': 'pointer',
+                                                            "width": "12vw",
+                                                            "marginLeft": "1vw",
+                                                        },
+                                                        id="button_update_detections"
+                                                    )
+                                                ],
+                                                style={
+                                                    "fontSize": "16pt",
+                                                    "marginBottom": "5px",
+                                                    "textAlign": "center",
+                                                    "margin": "0"
+                                                },
+                                            ),
+                                            dbc.Tooltip(
+                                                "Select the minimum size of a face to be detected, faces that are smaller will be discarded.",
+                                                target="info_icon_min_size0",
+                                                placement="top"
+                                            )
+                                        ]),
                                         html.Div(
                                             id="selection_of_faces",
                                             style={
@@ -378,7 +448,9 @@ class Detector(html.Div):
         self.selected_image = id
         print(id)
 
-        temp_df = self.df_faces[self.df_faces["img_id"] == id].copy()
+        self.df_detected = self.df_faces[
+            (self.df_faces["width"] >= self.min_size[0]) & (self.df_faces["height"] >= self.min_size[1])].copy()
+        temp_df = self.df_detected[self.df_detected["img_id"] == id].copy()
         # print(temp_df)
 
         img = self.df["img"].to_list()[index]
@@ -481,7 +553,7 @@ class Detector(html.Div):
         return fig, layout, False
 
 
-    def update_picture_fig(self, show_nrs, checklist, activated_by, selection, children):
+    def update_picture_fig(self, show_nrs, checklist, activated_by, selection, children, n_clicks, w, h):
         self.show_nrs = False if show_nrs == [] else True
 
         # Update the faces to show
@@ -537,6 +609,31 @@ class Detector(html.Div):
                 # result_txt = dash.no_update
             else:
                 return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        elif activated_by == "button_update_detections" and n_clicks is not None and n_clicks > 0:
+            # Update the min sizes
+            if w is not None:
+                self.min_size = (w, self.min_size[1])
+            if h is not None:
+                self.min_size = (self.min_size[0], h)
+            self.df_detected = self.df_faces[(self.df_faces["width"] >= self.min_size[0]) & (self.df_faces["height"] >= self.min_size[1])].copy()
+            # print(self.df_detected)
+            result = dash.no_update
+            result_txt = dash.no_update
+            children = []
+            for _, row in self.df_detected[self.df_detected["img_id"] == self.selected_image].copy().iterrows():
+                # print(row)
+                children.append(dcc.Checklist(
+                    options=[{"label": f" Face {row['nr']}", "value": "keep"}],
+                    value=["keep"] if row["use"] else [],
+                    id={"type": "keep-face", "index": row["nr"]},
+                    style={
+                        "fontSize": "16pt",
+                        "marginBottom": "5px",
+                        # "textAlign": "center",
+                        "margin": "0"
+                    }
+                ))
+
         elif activated_by != "show_nrs":
             id = f"{self.selected_image}_{activated_by['index']}"
             changed = checklist[activated_by['index']]
@@ -560,9 +657,11 @@ class Detector(html.Div):
         else:
             result = dash.no_update
             result_txt = dash.no_update
-
+        self.df_detected = self.df_faces[
+            (self.df_faces["width"] >= self.min_size[0]) & (self.df_faces["height"] >= self.min_size[1])].copy()
         img = self.df[self.df["id"] == self.selected_image]["img"].to_list()[0]
-        temp_df = self.df_faces[self.df_faces["img_id"] == self.selected_image].copy()
+        temp_df = self.df_detected[self.df_detected["img_id"] == self.selected_image].copy()
+        print(temp_df)
 
         img = plot_faces_on_img_opacity(img.copy(), temp_df.copy(), self.show_nrs)
 
@@ -575,5 +674,16 @@ class Detector(html.Div):
         )
 
         return fig, True, result, result_txt, children, dash.no_update
+
+
+    def update_min_size(self, w, h):
+        if w is not None:
+            self.min_size = (w, self.min_size[1])
+        if h is not None:
+            self.min_size = (self.min_size[0], h)
+
+        self.df_detected = self.df_faces[
+            (self.df_faces["width"] >= self.min_size[0]) & (self.df_faces["height"] >= self.min_size[1])].copy()
+
 
 

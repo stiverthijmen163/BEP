@@ -105,7 +105,7 @@ def db0_to_db1():
 
     """
     print("Transforming database...")
-    df_use_faces = det0.df_faces[det0.df_faces["use"] == True].copy()
+    df_use_faces = det0.df_detected[det0.df_detected["use"] == True].copy()
     faces = []
     for _, row in df_use_faces.iterrows():
         id = row["img_id"]
@@ -309,6 +309,21 @@ def on_image_click(n_clicks):
 
 
 @callback(
+    Input("button_update_detections", "n_clicks"),
+    State("min_width_det_input", "value"),
+    State("min_height_det_input", "value"),
+    State("change_or_clicked_image", "data"),
+)
+def update_min_size_det(n_clicks, w, h, data):
+    print("ACTIVITY")
+    print(data)
+    if data is None or not data:
+        if n_clicks is not None and n_clicks > 0 and ctx.triggered_id == "button_update_detections":
+            print("UPDATED MIN SIZE")
+            det0.update_min_size(w, h)
+
+
+@callback(
     Output("det0_fig", "figure", allow_duplicate=True),
     # Output("show_nrs", "value", allow_duplicate=True),  # Replace with your actual output
     Output("change_or_clicked_image", "data", allow_duplicate=True),
@@ -321,14 +336,19 @@ def on_image_click(n_clicks):
     Input(f"det0_fig", "selectedData"),
     State("change_or_clicked_image", "data"),
     State("scrollable_column", "children"),
+    Input("button_update_detections", "n_clicks"),
+    State("min_width_det_input", "value"),
+    State("min_height_det_input", "value"),
     prevent_initial_call=True
 )
-def process_checklist_values(show_nrs_val, checklist_values, selected_data, data, current_children):
+def process_checklist_values(show_nrs_val, checklist_values, selected_data, data, current_children, n_clicks, w, h):
     # Activated due to change in selecting image
+    # print("ACTIVITY")
     if data is None or not data:
         print("SELECTED NEW IMAGE, NO BUTTON PRESSED")
         selected_image = f"Selected image: {det0.selected_image}"
         return dash.no_update, True, dash.no_update, "", dash.no_update, selected_image
+
 
     # checklist_values will be a list like [['keep'], [], ['keep'], ...]
     print("Checklist states:", checklist_values)
@@ -338,7 +358,7 @@ def process_checklist_values(show_nrs_val, checklist_values, selected_data, data
 
     # You can interpret them like this:
     # keep_flags = [("keep" in value) for value in checklist_values]
-    return det0.update_picture_fig(show_nrs_val, checklist_values, trigger_id, selected_data, current_children)  # or however you want to use them
+    return det0.update_picture_fig(show_nrs_val, checklist_values, trigger_id, selected_data, current_children, n_clicks, w, h)
 
 @callback(
     Output("placeholder_cls0", "children", allow_duplicate=True),
