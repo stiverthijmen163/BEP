@@ -177,7 +177,8 @@ def update_output(contents, filename):
             dcc.Store(id="trigger-next-button0"),
             dcc.Store(id="change_or_clicked_image"),
             dcc.Store(id="progressbar_cls"),
-            dcc.Store(id="trigger_update")
+            dcc.Store(id="trigger_update"),
+            dcc.Store(id="disable_update_cls_btn")
         ])
 
     return "No files uploaded yet."
@@ -474,6 +475,101 @@ def update_progress_bar(trigger, data):
 )
 def disabled_interval(_):
     return True, True
+
+
+@callback(
+    Output("box_images1", "children", allow_duplicate=True),
+    Output("box_images1_left", "disabled", allow_duplicate=True),
+    Output('box_images1_right', 'disabled', allow_duplicate=True),
+    Output("box_images1_left", "style", allow_duplicate=True),
+    Output("box_images1_right", "style", allow_duplicate=True),
+    Output("images_showing_txt1", "children", allow_duplicate=True),
+    Input('box_images1_right', 'n_clicks'),
+    prevent_initial_call=True
+)
+def callback_next_button_cls(n_clicks):
+    return cls0.next_button(n_clicks)
+
+
+@callback(
+    Output("box_images1", "children", allow_duplicate=True),
+    Output("box_images1_left", "disabled", allow_duplicate=True),
+    Output('box_images1_right', 'disabled', allow_duplicate=True),
+    Output("box_images1_left", "style", allow_duplicate=True),
+    Output("box_images1_right", "style", allow_duplicate=True),
+    Output("images_showing_txt1", "children", allow_duplicate=True),
+    Input('box_images1_left', 'n_clicks'),
+    prevent_initial_call=True
+)
+def callback_previous_button_cls(n_clicks):
+    return cls0.previous_button(n_clicks)
+
+
+@callback(
+    Output("button_update_clusters", "disabled", allow_duplicate=True),
+    Output("button_update_clusters", "style", allow_duplicate=True),
+    Output("disable_update_cls_btn", "data", allow_duplicate=True),
+    Output("button_continue_clusters", "disabled", allow_duplicate=True),
+    Input("button_update_clusters", "n_clicks"),
+    prevent_initial_call=True
+)
+def disable_button_update_clusters(n_clicks):
+    if n_clicks is not None and n_clicks > 0:
+        style = {
+            'padding': '10px 20px',
+            'fontSize': '16pt',
+            'borderRadius': '12px',
+            'border': 'none',
+            'backgroundColor': '#2196F3',
+            'color': 'white',
+            'cursor': 'pointer',
+            "width": "10vw",
+            "opacity": 0.5
+        }
+        print("running")
+        return True, style, True, True
+    else:
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+
+@callback(
+    Output("cls0", "figure", allow_duplicate=True),
+    Output("box_images1", "children", allow_duplicate=True),
+    Output("images_showing_txt1", "children", allow_duplicate=True),
+    Output("showing_cluster0", "children", allow_duplicate=True),
+    Output("box_images1_left", "disabled", allow_duplicate=True),
+    Output("box_images1_right", "disabled", allow_duplicate=True),
+    Output("box_images1_left", "style", allow_duplicate=True),
+    Output("box_images1_right", "style", allow_duplicate=True),
+    Output("dropdown_change", "children", allow_duplicate=True),
+    Output("button_update_clusters", "disabled", allow_duplicate=True),
+    Output("button_update_clusters", "style", allow_duplicate=True),
+    Output("disable_update_cls_btn", "data", allow_duplicate=True),
+    Output("button_continue_clusters", "disabled", allow_duplicate=True),
+    Input("disable_update_cls_btn", "data"),
+    State("eps_input", "value"),
+    State("min_samples_input", "value"),
+    State("min_width_cls_input", "value"),
+    State("min_height_cls_input", "value"),
+    prevent_initial_call=True
+)
+def update_clusters_cls(data, eps_input, min_samples_input, min_width_cls_input, min_height_cls_input):
+    return cls0.update_clusters(data, eps_input, min_samples_input, min_width_cls_input, min_height_cls_input)
+
+
+@callback(
+    Output("box_images1", "children", allow_duplicate=True),
+    Output("images_showing_txt1", "children", allow_duplicate=True),
+    Output("showing_cluster0", "children", allow_duplicate=True),
+    Output("box_images1_left", "disabled", allow_duplicate=True),
+    Output("box_images1_right", "disabled", allow_duplicate=True),
+    Output("box_images1_left", "style", allow_duplicate=True),
+    Output("box_images1_right", "style", allow_duplicate=True),
+    Input("dropdown_cls", "value"),
+    prevent_initial_call=True
+)
+def update_image_box(value):
+    return cls0.update_image_box(value)
 
 
 

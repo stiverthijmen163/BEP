@@ -465,7 +465,7 @@ class Detector(html.Div):
                             id="image-preview", src="",
                             style={
                                 "maxWidth": "30vw",
-                                "maxHeight": "14vw",
+                                "maxHeight": "12vw",
                                 "width": "auto",              # Fill available horizontal space
                                 "height": "100%",   # Prevents vertical stretching
                                 "display": "block",
