@@ -576,8 +576,9 @@ class Detector(html.Div):
                     #     "nr": df_faces_nr,
                     #     "use": True
                     # })
+                    print(self.df_faces.columns)
                     self.df_faces.loc[len(self.df_faces)] = [
-                        f"{self.selected_image}_{nr}", self.selected_image, box, nr, True
+                        f"{self.selected_image}_{nr}", self.selected_image, box, nr, True, box[2], box[3]
                     ]
 
                     img = self.df[self.df["id"] == self.selected_image]["img"].copy().to_list()[0]
@@ -585,21 +586,25 @@ class Detector(html.Div):
                     face = img[y:y + h, x:x + w]
 
 
-                    result_txt = f"Created and added 'Face {nr}' to the set of faces:"
+                    # result_txt = f"Created and added 'Face {nr}' to the set of faces:"
 
                     result = Image.fromarray(cv2.cvtColor(face, cv2.COLOR_BGR2RGB))
 
-                    children.append(dcc.Checklist(
-                        options=[{"label": f" Face {nr}", "value": "keep"}],
-                        value=["keep"],
-                        id={"type": "keep-face", "index": nr},
-                        style={
-                            "fontSize": "16pt",
-                            "marginBottom": "5px",
-                            # "textAlign": "center",
-                            "margin": "0"
-                        }
-                    ))
+                    if w >= self.min_size[0] and h >= self.min_size[1]:
+                        children.append(dcc.Checklist(
+                            options=[{"label": f" Face {nr}", "value": "keep"}],
+                            value=["keep"],
+                            id={"type": "keep-face", "index": nr},
+                            style={
+                                "fontSize": "16pt",
+                                "marginBottom": "5px",
+                                # "textAlign": "center",
+                                "margin": "0"
+                            }
+                        ))
+                        result_txt = f"Created and added 'Face {nr}' to the set of faces:"
+                    else:
+                        result_txt = f"Created 'Face {nr}', but it is smaller than min_size"
 
 
                 else:
@@ -611,11 +616,12 @@ class Detector(html.Div):
                 return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
         elif activated_by == "button_update_detections" and n_clicks is not None and n_clicks > 0:
             # Update the min sizes
-            if w is not None:
-                self.min_size = (w, self.min_size[1])
-            if h is not None:
-                self.min_size = (self.min_size[0], h)
-            self.df_detected = self.df_faces[(self.df_faces["width"] >= self.min_size[0]) & (self.df_faces["height"] >= self.min_size[1])].copy()
+            self.update_min_size(w, h)
+            # if w is not None:
+            #     self.min_size = (w, self.min_size[1])
+            # if h is not None:
+            #     self.min_size = (self.min_size[0], h)
+            # self.df_detected = self.df_faces[(self.df_faces["width"] >= self.min_size[0]) & (self.df_faces["height"] >= self.min_size[1])].copy()
             # print(self.df_detected)
             result = dash.no_update
             result_txt = dash.no_update
