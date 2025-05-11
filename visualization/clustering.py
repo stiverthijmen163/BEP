@@ -22,13 +22,14 @@ custom_palette = [mcolors.to_hex(color) for color in palette]
 class Clusteror(html.Div):
     def __init__(self, name, df, df_faces):
         self.html_id = name
-        self.df = df
-        self.df_faces = df_faces
+        self.df = df.copy()
+        self.df_faces = df_faces.copy()
         self.fig = None
         self.eps = 5.4
         self.min_samples = 1
         self.min_size = (0, 0)
         self.selected_index = 0
+        self.selected_cluster = None
 
         # self.df_faces["face"] = self.df_faces["face"].apply(json.dumps)
         # self.df_faces["img"] = self.df_faces["img"].apply(lambda x: json.dumps(x.tolist()))
@@ -56,8 +57,14 @@ class Clusteror(html.Div):
         # Collect clusters
         labels = DBSCAN(eps=self.eps, min_samples=self.min_samples, n_jobs=-1, metric="euclidean").fit_predict(
             self.df_faces["embedding_tsne"].tolist())
+
+        # Set a counter to know what value to use when adding a new cluster
+        self.counter = max(labels)
+
+        # Update all labels to being strings
         labels = [str(i) for i in labels]
         print(labels)
+
         self.df_faces["cluster"] = labels
         self.df_faces["name"] = labels
 
@@ -133,6 +140,7 @@ class Clusteror(html.Div):
                                            "height": "22vw"}  # Takes available space
                                 ),
                                 html.Div(
+                                    id="div_cls_right",
                                     style={
                                         'backgroundColor': 'white',
                                         'width': '50%',  # Adjust width as needed
@@ -345,7 +353,7 @@ class Clusteror(html.Div):
                                             children=
                                             [dcc.Dropdown(
                                                 id="dropdown_cls",
-                                                options=self.df_faces["name"].unique(),
+                                                options=sort_items(self.df_faces["name"].unique()),
                                                 value="0",
                                                 clearable=False,
                                                 className="dropdown",
@@ -555,6 +563,7 @@ class Clusteror(html.Div):
             # Collect new clusters
             labels = DBSCAN(eps=self.eps, min_samples=self.min_samples, n_jobs=-1, metric="euclidean").fit_predict(
                 df_temp0["embedding_tsne"].tolist())
+            self.counter = max(labels)
             labels = [str(i) for i in labels]
             print(labels)
             df_temp0["cluster"] = labels
@@ -570,14 +579,15 @@ class Clusteror(html.Div):
             self.df_faces = pd.concat([df_temp0, df_temp1], ignore_index=True)
 
             # Update the figure
-            self.fig = px.scatter(self.df_faces, x="tsne_x", y="tsne_y", color="name", color_discrete_sequence=custom_palette)
-            self.fig.update_layout(margin=dict(l=0, r=0, b=0), showlegend=True,
-                                   title_text=f"Resulting clusters with eps={self.eps}, min_samples={self.min_samples}, min_size={self.min_size}",
-                                   title_x=0.5)
-            # Hide the "unknown" cluster initially, but keep it in the legend
-            self.fig.for_each_trace(
-                lambda t: t.update(visible='legendonly') if t.name == 'unknown' else None
-            )
+            # self.fig = px.scatter(self.df_faces, x="tsne_x", y="tsne_y", color="name", color_discrete_sequence=custom_palette)
+            # self.fig.update_layout(margin=dict(l=0, r=0, b=0), showlegend=True,
+            #                        title_text=f"Resulting clusters with eps={self.eps}, min_samples={self.min_samples}, min_size={self.min_size}",
+            #                        title_x=0.5)
+            # # Hide the "unknown" cluster initially, but keep it in the legend
+            # self.fig.for_each_trace(
+            #     lambda t: t.update(visible='legendonly') if t.name == 'unknown' else None
+            # )
+            self.update_fig()
 
             # Set the images to display as example
             self.images = self.df_faces[self.df_faces["cluster"] == "0"]["img"].copy().to_list()
@@ -591,11 +601,11 @@ class Clusteror(html.Div):
             else:
                 nr = len(self.images)
                 right_disabled = True
-            children = []
+            children_img = []
             for i in range(nr):
                 img = self.images[i].copy()
                 image = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-                children.append(
+                children_img.append(
                     html.Div(
                         id={"type": "image-click1", "index": i},  # Pattern-matching id
                         style={"display": "inline-block", "width": "9%", "padding": "0.5%"},
@@ -620,7 +630,7 @@ class Clusteror(html.Div):
 
             children = [dcc.Dropdown(
                 id="dropdown_cls",
-                options=self.df_faces["name"].unique(),
+                options=sort_items(self.df_faces["name"].unique()),
                 value="0",
                 clearable=False,
                 className="dropdown",
@@ -638,18 +648,20 @@ class Clusteror(html.Div):
                 "width": "10vw"
             }
 
-            return self.fig, children, new_txt, showing_cls, True, right_disabled, style_left, style_right, children, False, style, False, False
+            return self.fig, children_img, new_txt, showing_cls, True, right_disabled, style_left, style_right, children, False, style, False, False
         else:
             return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
-    def update_image_box(self, value):
+    def update_image_box(self, value, data):
         if value is not None:
+            print(f"Selected cluster '{value}'")
             # Update the images
             self.images = self.df_faces[self.df_faces["name"] == value]["img"].copy().to_list()
 
             # Reset the index tracker
             self.selected_index = 0
+            self.selected_cluster = value
 
             if len(self.images) > 10:
                 nr = 10
@@ -682,7 +694,370 @@ class Clusteror(html.Div):
             style_left = {"width": "5%"}
             style_right = {"width": "5%", "opacity": 0.5 if right_disabled else 1.0}
 
-            return children, new_txt, showing_cls, True, right_disabled, style_left, style_right
-        else:
-            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+            # children_change_name = dash.no_update
 
+            # In case we are in the edit mode for clustering
+            # if n_clicks is not None and n_clicks > 0:
+            #     # Update value for changing name to be empty
+            #     children_change_name = dcc.Input(
+            #                     id="name_of_cluster",
+            #                     type="text",
+            #                     placeholder="Only letters, spaces and '_' allowed",
+            #                     value="",
+            #                     # style={"marginLeft": "10px", "width": "50%"}
+
+            #                 )
+            if data is None:
+                d = 0
+            else:
+                d = data + 1
+
+            return children, new_txt, showing_cls, True, right_disabled, style_left, style_right, d
+        else:
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+
+    def update_components_on_cls_change(self):
+        # children_change_name = dcc.Input(
+        #                     id="name_of_cluster",
+        #                     type="text",
+        #                     placeholder="Only letters, spaces and '_' allowed",
+        #                     value="",
+        #                     # style={"marginLeft": "10px", "width": "50%"}
+        #
+        #                 )
+        value = ""
+        _, children_merge = self.update_merge_dropdown()
+        # items = np.delete(self.df_faces["name"].copy().unique(),
+        #                   np.where(self.df_faces["name"].copy().unique() == self.selected_cluster))
+        # val = items[0] if len(items) > 0 else None
+        # children_merge = dcc.Dropdown(
+        #     id="dropdown_cls_merge",
+        #     options=items,
+        #     value=val,
+        #     clearable=False,
+        #     className="dropdown",
+        #     searchable=True,
+        # )
+
+        return value, children_merge
+
+
+    def continue_to_edit(self, n_clicks):
+        if n_clicks is not None and n_clicks > 0:
+            items = sort_items(np.delete(self.df_faces["name"].copy().unique(), np.where(self.df_faces["name"].copy().unique() == "0")))
+            val = items[0]
+            self.selected_cluster = "0"
+            # print(np.delete(self.df_faces["name"].copy().unique(), np.where(self.df_faces["name"].copy().unique() == "0")))
+            children = [
+                html.P(
+                    "Edit any cluster, you can move faces to other clusters, merge clusters and rename them. Empty clusters will be removed.",
+                    style={
+                        "fontSize": "16pt",
+                        "marginBottom": "5px",
+                        "textAlign": "center",
+                        "margin": "5px",
+                        "fontWeight": "bold"
+                    }
+                ),
+                # html.Br(),
+                html.Label(
+                    "Select cluster to inspect/edit: ",
+                    style={
+                        "fontSize": "16pt",
+                        "marginBottom": "5px",
+                        "textAlign": "center",
+                        "margin": "0"
+                    },
+                ),
+                # dropdown for attribute
+                html.Div(
+                    id="dropdown_change",
+                    children=
+                    [dcc.Dropdown(
+                        id="dropdown_cls",
+                        options=sort_items(self.df_faces["name"].unique()),
+                        value="0",
+                        clearable=False,
+                        className="dropdown",
+                        searchable=True,
+                        # style={
+                        #     "width": "80%",
+                        #     "textAlign": "center",
+                        #     "margin": "0 auto"
+                        # }
+                    )],
+                    style={
+                        "width": "80%",
+                        "textAlign": "center",
+                        "margin": "0 auto"
+                    }
+                ),
+                html.Div([
+                    html.P(
+                        [
+                            "Cluster Name: ",
+                            dcc.Input(
+                                id="name_of_cluster",
+                                type="text",
+                                placeholder="Only letters, spaces and '_' allowed",
+                                value="",
+                                style={"marginLeft": "10px", "width": "50%"}
+                            ),
+                            html.Button(
+                                "Change Name",
+                                disabled=False,
+                                style={
+                                    'padding': '10px 0px',
+                                    'fontSize': '16pt',
+                                    'borderRadius': '12px',
+                                    'border': 'none',
+                                    'backgroundColor': '#2196F3',
+                                    'color': 'white',
+                                    'cursor': 'pointer',
+                                    "width": "10vw",
+                                    "marginLeft": "1vw",
+                                    "marginTop": "5px"
+                                },
+                                id="button_change_name"
+                            )
+                        ],
+                        style={
+                            "fontSize": "16pt",
+                            "marginBottom": "5px",
+                            "textAlign": "center",
+                            "margin": "0"
+                        },
+                    ),
+                ]),
+                html.Div([
+                    html.P(style={
+                            'display': 'flex',
+                            'justifyContent': 'center',
+                            'gap': '1vw',
+                            "marginTop": "5px",
+                            'alignItems': 'center',
+                            # 'padding': '20px',
+                            # 'backgroundColor': '#e0e0e0',
+                        },
+                        children=[
+                            "Merge with cluster: ",
+                            html.Div(id="dropdown_merge_change", children=dcc.Dropdown(
+                                id="dropdown_cls_merge",
+                                options=items,
+                                value=val,
+                                clearable=False,
+                                className="dropdown",
+                                searchable=True,
+                            ), style={"width": "50%"}),
+                            html.Button(
+                                "Merge clusters",
+                                disabled=False,
+                                style={
+                                    'padding': '10px 0px',
+                                    'fontSize': '16pt',
+                                    'borderRadius': '12px',
+                                    'border': 'none',
+                                    'backgroundColor': '#2196F3',
+                                    'color': 'white',
+                                    'cursor': 'pointer',
+                                    "width": "10vw",
+                                    # "marginLeft": "1vw",
+                                    # "marginTop": "5px"
+                                },
+                                id="button_merge_clusters"
+                            )
+                        ],
+                    )],
+                    style={
+                        "fontSize": "16pt",
+                        "marginBottom": "5px",
+                        "textAlign": "center",
+                        "margin": "0"
+                    },
+                    # ),
+                )
+            ]
+
+            return children, True
+        else:
+            return dash.no_update, dash.no_update
+
+
+    def change_name(self, n_clicks, name):
+        if n_clicks is not None and n_clicks > 0:
+            if name == "":
+                name = "None"
+
+            print(f"Update name of cluster '{self.selected_cluster}' to '{name}'")
+            # print(f"selected cluster: {self.selected_cluster}")
+            self.df_faces.loc[self.df_faces["name"] == self.selected_cluster, "name"] = f"{name}"
+            self.update_fig()
+
+            children = [dcc.Dropdown(
+                id="dropdown_cls",
+                options=sort_items(self.df_faces["name"].unique()),
+                value=f"{name}",
+                clearable=False,
+                className="dropdown",
+                searchable=True,
+            )]
+
+            _, children_merge = self.update_merge_dropdown()
+            # items = np.delete(self.df_faces["name"].copy().unique(),
+            #                   np.where(self.df_faces["name"].copy().unique() == f"{name}"))
+            # val = items[0]
+            # children_merge = dcc.Dropdown(
+            #     id="dropdown_cls_merge",
+            #     options=items,
+            #     value=val,
+            #     clearable=False,
+            #     className="dropdown",
+            #     searchable=True,
+            # )
+
+            # Update selected cluster to new name
+            self.selected_cluster = f"{name}"
+            return self.fig, children, children_merge
+        else:
+            print("no_update")
+            # self.update_fig()
+            return dash.no_update, dash.no_update, dash.no_update
+
+
+    def update_fig(self):
+        # Update the figure
+        self.fig = px.scatter(self.df_faces, x="tsne_x", y="tsne_y", color="name",
+                              color_discrete_sequence=custom_palette)
+        self.fig.update_layout(margin=dict(l=0, r=0, b=0), showlegend=True,
+                               title_text=f"Resulting clusters with eps={self.eps}, min_samples={self.min_samples}, min_size={self.min_size}",
+                               title_x=0.5)
+
+        # Hide the "unknown" cluster initially, but keep it in the legend
+        self.fig.for_each_trace(
+            lambda t: t.update(visible='legendonly') if t.name == 'unknown' else None
+        )
+
+
+    def merge_clusters(self, n_clicks, cluster):
+        if n_clicks is not None and n_clicks > 0:
+            print(f"Merge cluster '{self.selected_cluster}' with cluster '{cluster}'")
+
+            # Collect the name
+            name = self.df_faces[self.df_faces["name"] == self.selected_cluster]["name"].values[0]
+
+            # Merge the clusters by sharing the name
+            self.df_faces.loc[self.df_faces["name"] == cluster, "name"] = f"{name}"
+            self.update_fig()
+
+            # Update the dropdown manu for selecting a cluster to inspect
+            children = [dcc.Dropdown(
+                id="dropdown_cls",
+                options=sort_items(self.df_faces["name"].unique()),
+                value=f"{name}",
+                clearable=False,
+                className="dropdown",
+                searchable=True,
+            )]
+
+            items, children_merge = self.update_merge_dropdown()
+
+            # Set the standard style of the button
+            style = {
+                'padding': '10px 0px',
+                'fontSize': '16pt',
+                'borderRadius': '12px',
+                'border': 'none',
+                'backgroundColor': '#2196F3',
+                'color': 'white',
+                'cursor': 'pointer',
+                "width": "10vw",
+                "opacity": 1.0 if len(items) > 0 else 0.5
+            }
+            disabled = False if len(items) > 0 else True
+
+            # If no items are left, the button disables and the dropdown empties
+            # if len(items) > 0:  # Items left
+            #     val = items[0]
+            #     disabled = False
+            # else:  # No items left
+            #     val = None
+            #     disabled = True
+            #     style.update({"opacity": 0.5})
+
+            # val = items[0] if len(items) > 0 else None
+
+            # children_merge = dcc.Dropdown(
+            #                     id="dropdown_cls_merge",
+            #                     options=items,
+            #                     value=val,
+            #                     clearable=False,
+            #                     className="dropdown",
+            #                     searchable=True,
+            #                 )
+
+            return self.fig, children, children_merge, disabled, style
+        else:
+            print("no_update")
+            self.update_fig()
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+
+    def update_merge_dropdown(self):
+        items = sort_items(np.delete(self.df_faces["name"].copy().unique(),
+                          np.where(self.df_faces["name"].copy().unique() == self.selected_cluster)))
+
+        val = items[0] if len(items) > 0 else None
+        c = dcc.Dropdown(
+            id="dropdown_cls_merge",
+            options=items,
+            value=val,
+            clearable=False,
+            className="dropdown",
+            searchable=True,
+        )
+
+        return items, c
+
+
+    def add_new_cluster(self, selected_data):
+        if selected_data is not None and len(selected_data["points"]) > 0:
+            selected_points = selected_data["points"]
+            selected_coords = [(point["x"], point["y"]) for point in selected_points]
+            print(selected_points)
+            print(selected_coords)
+            # print(self.df_faces.iloc[indices]["tsne_x"])
+            # df_temp = self.df_faces.copy()
+            #
+            # mask = df_temp[
+            #     df_temp.apply(lambda row: (row["tsne_x"], row["tsne_y"]) in selected_coords, axis=1)
+            # ]
+
+            # Update counter
+            self.counter += 1
+
+            self.df_faces['name'] = self.df_faces.apply(
+                lambda row: f"{self.counter}" if (row['tsne_x'], row['tsne_y']) in selected_coords else row['name'],
+                axis=1
+            )
+
+            # Update counter
+            # self.counter += 1
+            # self.df_faces.loc[mask, "name"] = f"{self.counter}"
+
+            self.update_fig()
+            # print(selected_rows.)
+            # print(selected_rows["tsne_x"])
+            # print(selected_rows["tsne_y"])
+            children = [dcc.Dropdown(
+                id="dropdown_cls",
+                options=sort_items(self.df_faces["name"].unique()),
+                value=f"{self.counter}",
+                clearable=False,
+                className="dropdown",
+                searchable=True,
+            )]
+
+            return self.fig, children
+
+        return dash.no_update, dash.no_update

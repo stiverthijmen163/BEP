@@ -123,3 +123,24 @@ def plot_faces_on_img_opacity(img: cv2.Mat, df: pd.DataFrame, show_nrs: bool = F
         #                 (0, 255, 0), 2, cv2.LINE_AA)
 
     return img
+
+def sort_items(lst: List[str]):
+    # Convert items to integers if possible
+    lst_int = []
+    lst_str = []
+    for i in lst:
+        try:  # = int
+            int(i)
+            lst_int.append(int(i))
+        except ValueError:  # = string
+            lst_str.append(i)
+
+    # Sort the list and convert all items back to strings
+    sorted_lst_int = [str(i) for i in sorted(lst_int)]
+    sorted_lst_str = sorted(lst_str)
+
+    print(sorted_lst_int)
+    print(sorted_lst_str)
+    print(sorted_lst_int + sorted_lst_str)
+
+    return sorted_lst_int + sorted_lst_str

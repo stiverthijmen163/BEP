@@ -14,6 +14,7 @@ import time
 import face_recognition
 from sklearn.manifold import TSNE
 from visualization.functions import *
+import re
 
 from sympy.codegen.fnodes import allocatable
 
@@ -178,7 +179,10 @@ def update_output(contents, filename):
             dcc.Store(id="change_or_clicked_image"),
             dcc.Store(id="progressbar_cls"),
             dcc.Store(id="trigger_update"),
-            dcc.Store(id="disable_update_cls_btn")
+            dcc.Store(id="disable_update_cls_btn"),
+            dcc.Store(id="enable_click_on_image"),
+            dcc.Store(id="update_components"),
+            dcc.Store(id="add_cluster")
         ])
 
     return "No files uploaded yet."
@@ -530,6 +534,7 @@ def callback_previous_button_cls(n_clicks):
     Output("button_update_clusters", "style", allow_duplicate=True),
     Output("disable_update_cls_btn", "data", allow_duplicate=True),
     Output("button_continue_clusters", "disabled", allow_duplicate=True),
+    Output("enable_click_on_image", "data", allow_duplicate=True),
     Input("button_update_clusters", "n_clicks"),
     prevent_initial_call=True
 )
@@ -547,9 +552,9 @@ def disable_button_update_clusters(n_clicks):
             "opacity": 0.5
         }
         print("running")
-        return True, style, True, True
+        return True, style, True, True, False
     else:
-        return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
 @callback(
@@ -585,11 +590,100 @@ def update_clusters_cls(data, eps_input, min_samples_input, min_width_cls_input,
     Output("box_images1_right", "disabled", allow_duplicate=True),
     Output("box_images1_left", "style", allow_duplicate=True),
     Output("box_images1_right", "style", allow_duplicate=True),
+    Output("update_components", "data", allow_duplicate=True),
+    # Output("name_of_cluster", "value", allow_duplicate=True),
     Input("dropdown_cls", "value"),
+    State("enable_click_on_image", "data"),
+    # Input("button_continue_clusters", "n_clicks"),
     prevent_initial_call=True
 )
-def update_image_box(value):
-    return cls0.update_image_box(value)
+def update_image_box(value, data):
+    print("UPDATE")
+    # if ctx.triggered_id == "dropdown_cls":
+    return cls0.update_image_box(value, data)
+    # return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+
+@callback(
+    Output("name_of_cluster", "value", allow_duplicate=True),
+    Output("dropdown_merge_change", "children", allow_duplicate=True),
+    Input("update_components", "data"),
+    prevent_initial_call=True
+)
+def update_components_change_cls(data):
+    print("UPDATE COMPONENTS")
+    return cls0.update_components_on_cls_change()
+
+
+@callback(
+    Output("div_cls_right", "children", allow_duplicate=True),
+    Output("enable_click_on_image", "data", allow_duplicate=True),
+    Input("button_continue_clusters", "n_clicks"),
+    # State("dropdown_cls", "value"),
+    prevent_initial_call=True
+)
+def continue_button_cls(n_clicks):  #, value):
+    # print(value)
+    return cls0.continue_to_edit(n_clicks)
+
+
+@callback(
+    Output("cls0", "figure", allow_duplicate=True),
+    Output("dropdown_change", "children", allow_duplicate=True),
+    Output("dropdown_merge_change", "children", allow_duplicate=True),
+    Input("button_change_name", "n_clicks"),
+    State("name_of_cluster", "value"),
+    prevent_initial_call=True
+)
+def update_name_cls(n_clicks, name):
+    if re.fullmatch(r'[A-Za-z_ ]*', name):
+        return cls0.change_name(n_clicks, name)
+    return dash.no_update, dash.no_update, dash.no_update
+
+
+@callback(
+    Output("cls0", "figure", allow_duplicate=True),
+    Output("dropdown_change", "children", allow_duplicate=True),
+    Output("dropdown_merge_change", "children", allow_duplicate=True),
+    Output("button_merge_clusters", "disabled", allow_duplicate=True),
+    Output("button_merge_clusters", "style", allow_duplicate=True),
+    Input("button_merge_clusters", "n_clicks"),
+    State("dropdown_cls_merge", "value"),
+    prevent_initial_call=True
+)
+def merge_cls(n_clicks, cls):
+    return cls0.merge_clusters(n_clicks, cls)
+
+
+@callback(
+    # Output("cls0", "figure", allow_duplicate=True),
+    Output("add_cluster", "data", allow_duplicate=True),
+    Input("cls0", "selectedData"),
+    State("enable_click_on_image", "data"),
+    prevent_initial_call=True
+)
+def callback_new_cluster(selected_data, data):
+    # Checks if we are in edit mode
+    if data is not None and data == True:
+        return {"selectedData": selected_data}
+    else:
+        return dash.no_update
+    # return cls0.add_new_cluster(selected_data)
+
+
+@callback(
+    Output("cls0", "figure", allow_duplicate=True),
+    # Output("dropdown_cls", "value", allow_duplicate=True),
+    Output("dropdown_change", "children", allow_duplicate=True),
+    Input("add_cluster", "data"),
+    prevent_initial_call=True
+)
+def new_cluster(data):
+    # Add a new cluster only if the data contains the selected points
+    if data is not None:
+        return cls0.add_new_cluster(data["selectedData"])
+    else:
+        return dash.no_update
 
 
 
