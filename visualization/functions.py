@@ -4,6 +4,7 @@ from PIL import Image
 from typing import List, Tuple
 import cv2
 import numpy as np
+import json
 
 
 def yolo_to_haar(img: cv2.Mat, boxes: List[List[float]]) -> List[List[int]]:
@@ -144,3 +145,12 @@ def sort_items(lst: List[str]):
     print(sorted_lst_int + sorted_lst_str)
 
     return sorted_lst_int + sorted_lst_str
+
+
+def save_to_db(df_main: pd.DataFrame, df_face: pd.DataFrame, name: str) -> None:
+    df_main["img"] = df_main["img"].apply(lambda x: json.dumps(x.tolist()))
+    print(df_main)
+    print(df_main.columns)
+
+    print(df_face)
+    print(df_face.columns)

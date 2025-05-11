@@ -182,7 +182,8 @@ def update_output(contents, filename):
             dcc.Store(id="disable_update_cls_btn"),
             dcc.Store(id="enable_click_on_image"),
             dcc.Store(id="update_components"),
-            dcc.Store(id="add_cluster")
+            dcc.Store(id="add_cluster"),
+            dcc.Store(id="update_click_on_image")
         ])
 
     return "No files uploaded yet."
@@ -304,7 +305,7 @@ def callback_previous_button(n_clicks, data):
 )
 def on_image_click(n_clicks):
     if not ctx.triggered_id or all(click is None or click == 0 for click in n_clicks):
-        return dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update
     # ctx.triggered_id gives the id of the clicked image
     index = ctx.triggered_id["index"]
     print(f" you clicked on image {index}")
@@ -607,6 +608,7 @@ def update_image_box(value, data):
 @callback(
     Output("name_of_cluster", "value", allow_duplicate=True),
     Output("dropdown_merge_change", "children", allow_duplicate=True),
+    Output("selected_image_div_cls", "children", allow_duplicate=True),
     Input("update_components", "data"),
     prevent_initial_call=True
 )
@@ -618,6 +620,8 @@ def update_components_change_cls(data):
 @callback(
     Output("div_cls_right", "children", allow_duplicate=True),
     Output("enable_click_on_image", "data", allow_duplicate=True),
+    Output("button3", "disabled", allow_duplicate=True),
+    Output("button3", "style", allow_duplicate=True),
     Input("button_continue_clusters", "n_clicks"),
     # State("dropdown_cls", "value"),
     prevent_initial_call=True
@@ -631,6 +635,7 @@ def continue_button_cls(n_clicks):  #, value):
     Output("cls0", "figure", allow_duplicate=True),
     Output("dropdown_change", "children", allow_duplicate=True),
     Output("dropdown_merge_change", "children", allow_duplicate=True),
+    Output("selected_image_div_cls", "children", allow_duplicate=True),
     Input("button_change_name", "n_clicks"),
     State("name_of_cluster", "value"),
     prevent_initial_call=True
@@ -638,7 +643,7 @@ def continue_button_cls(n_clicks):  #, value):
 def update_name_cls(n_clicks, name):
     if re.fullmatch(r'[A-Za-z_ ]*', name):
         return cls0.change_name(n_clicks, name)
-    return dash.no_update, dash.no_update, dash.no_update
+    return dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
 @callback(
@@ -647,6 +652,7 @@ def update_name_cls(n_clicks, name):
     Output("dropdown_merge_change", "children", allow_duplicate=True),
     Output("button_merge_clusters", "disabled", allow_duplicate=True),
     Output("button_merge_clusters", "style", allow_duplicate=True),
+    Output("selected_image_div_cls", "children", allow_duplicate=True),
     Input("button_merge_clusters", "n_clicks"),
     State("dropdown_cls_merge", "value"),
     prevent_initial_call=True
@@ -675,6 +681,7 @@ def callback_new_cluster(selected_data, data):
     Output("cls0", "figure", allow_duplicate=True),
     # Output("dropdown_cls", "value", allow_duplicate=True),
     Output("dropdown_change", "children", allow_duplicate=True),
+    Output("selected_image_div_cls", "children", allow_duplicate=True),
     Input("add_cluster", "data"),
     prevent_initial_call=True
 )
@@ -683,7 +690,88 @@ def new_cluster(data):
     if data is not None:
         return cls0.add_new_cluster(data["selectedData"])
     else:
+        return dash.no_update, dash.no_update, dash.no_update
+
+
+@callback(
+    # Output("det0_fig", "figure", allow_duplicate=True),
+    # Output("selection_of_faces", "children", allow_duplicate=True),
+    # Output("change_or_clicked_image", "data", allow_duplicate=True),
+    Output("update_click_on_image", "data", allow_duplicate=True),
+    Input({"type": "image-click1", "index": ALL}, "n_clicks"),
+    State("enable_click_on_image", "data"),
+    # State("change_or_clicked_image", "data"),
+    prevent_initial_call=True
+)
+def on_image_click(n_clicks, data):
+    # No image was clicked, just initialized
+    if not ctx.triggered_id or all(click is None or click == 0 for click in n_clicks):
         return dash.no_update
+
+    # Checks if we are in edit mode
+    if data is not None and data == True:
+
+        # Collect the image on which was clicked
+        index = ctx.triggered_id["index"]
+        # print(f" you clicked on image {index}")
+        return index
+    else:
+        return dash.no_update
+
+
+@callback(
+    Output("selected_image_div_cls", "children", allow_duplicate=True),
+    Input("update_click_on_image", "data"),
+    prevent_initial_call=True
+)
+def update_click_on_image(data):
+    print(f"You clicked on image {data}")
+    return cls0.select_image(data)
+
+
+@callback(
+    Output("cls0", "figure", allow_duplicate=True),
+    Output("selected_image_div_cls", "children", allow_duplicate=True),
+    Output("box_images1", "children", allow_duplicate=True),
+    Output("images_showing_txt1", "children", allow_duplicate=True),
+    Output("box_images1_left", "disabled", allow_duplicate=True),
+    Output("box_images1_right", "disabled", allow_duplicate=True),
+    Output("box_images1_left", "style", allow_duplicate=True),
+    Output("box_images1_right", "style", allow_duplicate=True),
+    Input("button_move", "n_clicks"),
+    State("dropdown_move_to_cls", "value"),
+    State("update_click_on_image", "data"),
+    prevent_initial_call=True
+)
+def move_face_to_cls(n_clicks, value, index):
+    print(value)
+    return cls0.move_face(n_clicks, value, index)
+
+
+@callback(
+    Output("button3", "style", allow_duplicate=True),
+    Input("button3", "n_clicks"),
+    State("name_of_db", "value"),
+    prevent_initial_call=True
+)
+def btn_click_save_to_db(n_clicks, value):
+    if n_clicks is not None and n_clicks > 0:
+        global df0
+        if re.fullmatch(r'[A-Za-z_ ]*', f"{value}"):
+            save_to_db(df0.copy(), cls0.df_faces.copy(), value)
+            style = {
+                'padding': '10px 20px',
+                'fontSize': '16pt',
+                'borderRadius': '12px',
+                'border': 'none',
+                'backgroundColor': '#4CAF50',
+                'color': 'white',
+                'cursor': 'pointer',
+                "width": "20vw",
+                "marginBottom": "20px",
+            }
+            return style
+    return dash.no_update
 
 
 

@@ -439,6 +439,42 @@ class Clusteror(html.Div):
                             ]
                         ),
                         # html.Br(),
+                        html.Div([
+                                html.P([
+                                    "Name of the database:",
+                                    dcc.Input(
+                                        id="name_of_db",
+                                        type="text",
+                                        placeholder="Only letters, spaces and '_' allowed",
+                                        value="",
+                                        style={"width": "30vw", "marginLeft": "1vw"}
+                                    )],
+                                    style={
+                                        "fontSize": "16pt",
+                                        # "gap": "1vw",
+                                        # "marginBottom": "5px",
+                                        "textAlign": "center",
+                                        # "margin": "5px",
+                                        # "fontWeight": "bold"
+                                    }
+                                )
+                                # dcc.Input(
+                                #     id="name_of_db",
+                                #     type="text",
+                                #     placeholder="Only letters, spaces and '_' allowed",
+                                #     value="",
+                                #     style={"width": "50%"}
+                                # )
+                            ],
+                            style={
+                                "display": "flex",
+                                "alignItems": "center",
+                                "justifyContent": "center",
+                                "margin": "0 auto",
+                                # "padding": "1vw",
+                                "gap": "1vw"  # Optional: adds spacing between items
+                            }
+                        ),
                         html.Button(
                             "Save to Database",
                             disabled=True,
@@ -740,7 +776,7 @@ class Clusteror(html.Div):
         #     searchable=True,
         # )
 
-        return value, children_merge
+        return value, children_merge, []
 
 
     def continue_to_edit(self, n_clicks):
@@ -876,12 +912,59 @@ class Clusteror(html.Div):
                         "margin": "0"
                     },
                     # ),
+                ),
+                html.Div(
+                    children=[],
+                    id="selected_image_div_cls",
+                    style={
+                        "display": "flex",
+                        "width": "99%",
+                        "height": "35%",  # optional, depending on parent container
+                        "margin": "0 auto",
+                        "gap": "1vw"  # spacing between the image and div
+                    }
                 )
+                # html.Div([
+                #     html.Img(
+                #         src="data:image/png;base64,...",  # or external URL / `app.get_asset_url(...)`
+                #         style={
+                #             "height": "100%",  # or a fixed size like "20vw"
+                #             "width": "auto",
+                #             "maxHeight": "100%",  # Ensure it scales nicely
+                #             "objectFit": "contain"
+                #         }
+                #     ),
+                #     html.Div(
+                #         "Your content here",
+                #         style={
+                #             "flex": "1",
+                #             "padding": "1vw",
+                #             "border": "1px solid #ccc",
+                #             "backgroundColor": "#f8f8f8"
+                #         }
+                #     )
+                # ], style={
+                #     "display": "flex",
+                #     "height": "100%",  # optional, depending on parent container
+                #     "gap": "1vw"  # spacing between the image and div
+                # })
             ]
 
-            return children, True
+            style = {
+                'padding': '10px 20px',
+                'fontSize': '16pt',
+                'borderRadius': '12px',
+                'border': 'none',
+                'backgroundColor': '#2196F3',
+                'color': 'white',
+                'cursor': 'pointer',
+                "width": "20vw",
+                "marginBottom": "20px"
+            }
+
+            return children, True, False, style
         else:
-            return dash.no_update, dash.no_update
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
     def change_name(self, n_clicks, name):
@@ -918,11 +1001,11 @@ class Clusteror(html.Div):
 
             # Update selected cluster to new name
             self.selected_cluster = f"{name}"
-            return self.fig, children, children_merge
+            return self.fig, children, children_merge, []
         else:
             print("no_update")
             # self.update_fig()
-            return dash.no_update, dash.no_update, dash.no_update
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
     def update_fig(self):
@@ -996,11 +1079,11 @@ class Clusteror(html.Div):
             #                     searchable=True,
             #                 )
 
-            return self.fig, children, children_merge, disabled, style
+            return self.fig, children, children_merge, disabled, style, []
         else:
             print("no_update")
             self.update_fig()
-            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
     def update_merge_dropdown(self):
@@ -1058,6 +1141,141 @@ class Clusteror(html.Div):
                 searchable=True,
             )]
 
-            return self.fig, children
+            return self.fig, children, []
 
-        return dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update
+
+
+    def select_image(self, data):
+        index = self.selected_index + data
+        img = Image.fromarray(cv2.cvtColor(self.images[index].copy(), cv2.COLOR_BGR2RGB))
+
+        items = sort_items(np.delete(self.df_faces["name"].copy().unique(),
+                                     np.where(self.df_faces["name"].copy().unique() == self.selected_cluster)))
+
+        val = items[0] if len(items) > 0 else None
+        disabled = False if len(items) > 0 else True
+
+        children = [
+            html.Img(
+                src=img,  # or external URL / `app.get_asset_url(...)`
+                style={
+                    "maxWidth": "10vw",
+                    "maxHeight": "100%",
+                    "width": "auto",  # Fill available horizontal space
+                    "height": "100%",  # Prevents vertical stretching
+                    "display": "block",
+                    "marginLeft": "auto",
+                    "marginRight": "auto",
+                    "objectFit": "contain"
+                }
+            ),
+            html.Div(
+                [
+                    html.Label("Move to cluster:",
+                               style={"fontSize": "16pt", "alignSelf": "center"}),
+                    dcc.Dropdown(
+                        id="dropdown_move_to_cls",
+                        options=items,
+                        value=val,
+                        clearable=False,
+                        className="dropdown",
+                        searchable=True,
+                        style={"width": "20vw"}  #, "marginRight": "10px"}
+                    ),
+                    html.Button(
+                        "Move",
+                        disabled=disabled,
+                        id="button_move",
+                        style={
+                            'padding': '10px 0px',
+                            'fontSize': '16pt',
+                            'borderRadius': '12px',
+                            'border': 'none',
+                            'backgroundColor': '#2196F3',
+                            'color': 'white',
+                            'cursor': 'pointer',
+                            "width": "5vw",
+                            "marginTop": "0px"
+                        }
+                    )
+                ],
+                style={
+                    "display": "flex",
+                    "alignItems": "center",
+                    "justifyContent": "center",
+                    "margin": "0 auto",
+                    # "padding": "1vw",
+                    "gap": "1vw"  # Optional: adds spacing between items
+                }
+            )
+        ]
+
+        return children
+
+
+    def move_face(self, n_clicks, value, index):
+        if n_clicks is not None and n_clicks > 0:
+            i = self.selected_index + index
+            # img = self.images[i]
+
+            img_id = self.df_faces[self.df_faces["name"] == self.selected_cluster]["id"].copy().to_list()[i]
+            self.df_faces.loc[self.df_faces["id"] == img_id, "name"] = f"{value}"
+
+            self.images = self.df_faces[self.df_faces["name"] == self.selected_cluster]["img"].copy().to_list()
+
+            self.update_fig()
+
+            print(len(self.images), self.selected_index)
+
+            if len(self.images) > 0:
+                if len(self.images) == self.selected_index:
+                    self.selected_index -= 10
+            # if len(self.images) == 0:
+            #     self.selected_index = 0
+
+                if len(self.images[self.selected_index:]) > 10:
+                    nr = 10
+                    right_disabled = False
+                else:
+                    nr = len(self.images[self.selected_index:])
+                    right_disabled = True
+
+                children = []
+                for i in range(nr):
+                    img = self.images[i + self.selected_index].copy()
+                    image = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+                    children.append(
+                        html.Div(
+                            id={"type": "image-click1", "index": i},  # Pattern-matching id
+                            style={"display": "inline-block", "width": "9%", "padding": "0.5%"},
+                            n_clicks=0,  # Enables click tracking
+                            children=html.Img(src=image, style={
+                                "width": "100%",
+                                "cursor": "pointer",
+                                "maxHeight": "8vw",
+                                "objectFit": "contain",
+                            })
+                        )
+                    )
+
+                new_txt = f"Showing {self.selected_index + 1} - {nr + self.selected_index} out of {len(self.images)}"
+                # showing_cls = f"Showing cluster '{value}'."
+
+                style_left = {"width": "5%", "opacity": 0.5 if self.selected_index == 0 else 1.0}
+                style_right = {"width": "5%", "opacity": 0.5 if right_disabled else 1.0}
+
+                left_disabled = True if self.selected_index == 0 else False
+            else:
+                children = []
+                new_txt = f"Showing 0 - 0 out of {len(self.images)}"
+                left_disabled = True
+                right_disabled = True
+                style_left = {"width": "5%", "opacity": 0.5}
+                style_right = {"width": "5%", "opacity": 0.5}
+
+
+            # img_id = self.df_faces[self.df_faces["face"] == img]
+            return self.fig, [], children, new_txt, left_disabled, right_disabled, style_left, style_right
+        else:
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
