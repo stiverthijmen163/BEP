@@ -326,7 +326,19 @@ class Detector(html.Div):
                                 "marginBottom": "20px",
                             },
                             id="button2"
-                        )
+                        ),
+                        html.P(
+                            "",
+                            style={
+                                "fontSize": "16pt",
+                                "marginBottom": "20px",
+                                "textAlign": "center",
+                                "margin": "5px",
+                                "fontWeight": "bold"
+                            },
+                            id="successful_detection"
+                        ),
+                        # html.Br()
                         # html.Button(id="box_images0_left", style={}),
                         # html.Button(id="box_images0_right", style={})
                     ]

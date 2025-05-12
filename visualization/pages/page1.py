@@ -42,7 +42,7 @@ layout = html.Div(
         html.Div(
             style={'textAlign': 'center'},
             children=[
-                html.H2("Data Selection"),
+                html.H2("Data Selection", style={"marginTop": "20px"}),
                 html.Hr(),
                 html.Div(
                     style={
@@ -57,8 +57,13 @@ layout = html.Div(
                     children=[
                         html.P("Click the button to select a folder: You can either select any number of .jpg and .png files, or one .csv file. The csv-file should contain the following:", style={'fontSize': '14pt'}),
                         html.P("- The unique name of the image as 'id'", style={'fontSize': '14pt'}),
-                        html.P("- The image in numpy format as 'img'", style={'fontSize': '14pt'}),
-                        html.P("- Any extra information you may be interested in.", style={'fontSize': '14pt'}),
+                        html.P("- The image as lists containing BGR-values as 'img'", style={'fontSize': '14pt'}),
+                        # html.P("- Any extra information you may be interested in. This may only contain strings or numbers, url's must be in the 'url' column. Example:", style={'fontSize': '14pt'}),
+                        html.P([
+                            "- Any extra information you may be interested in. This may only contain lists of strings, url's must be in the 'url' column. Example: ",
+                            html.A("GitHub", href="https://github.com/stiverthijmen163/BEP/blob/main/examples/example_csv.csv", target="_blank", style={'color': '#1d4ed8', 'textDecoration': 'underline'}),
+                        ],
+                        style={'fontSize': '14pt'}),
                         dcc.Upload(
                             id='upload-folder',
                             children=html.Button("📁 Select File(s)"),
@@ -180,10 +185,11 @@ def update_output(contents, filename):
             dcc.Store(id="progressbar_cls"),
             dcc.Store(id="trigger_update"),
             dcc.Store(id="disable_update_cls_btn"),
-            dcc.Store(id="enable_click_on_image"),
-            dcc.Store(id="update_components"),
+            dcc.Store(id="enable_click_on_image"),  # When cluster mode is in edit True to allow clickable images
+            dcc.Store(id="update_components"),  # Triggers update on components in edit mode
             dcc.Store(id="add_cluster"),
-            dcc.Store(id="update_click_on_image")
+            dcc.Store(id="update_click_on_image"),
+            dcc.Store(id="trigger_button3")  # To disable button3
         ])
 
     return "No files uploaded yet."
@@ -371,6 +377,7 @@ def process_checklist_values(show_nrs_val, checklist_values, selected_data, data
     Output("progress_timer", "disabled", allow_duplicate=True),
     Output("button2", "disabled", allow_duplicate=True),
     Output("button2", "style", allow_duplicate=True),
+    Output("successful_detection", "children", allow_duplicate=True),
     Input("button2", "n_clicks"),
     prevent_initial_call=True
 )
@@ -378,45 +385,50 @@ def react_on_button2(n_clicks):
     if n_clicks is not None and n_clicks > 0:
         global df1
         df1 = db0_to_db1().copy()
-        # global cls0
-        # cls0 = Clusteror("cls0", det0.df, det0.df_faces)
-        size = len(df1)
-        result = html.Div([
-            html.H2("Face Clustering", style={"textAlign": "center"}),
-            html.Hr(),
-            # dcc.Interval(id='progress_timer', interval=500, disabled=False),
-            dbc.Progress(
-                id="progressbar0",
-                label="0%",
-                value=0,
-                striped=True,
-                animated=True,
-                color="#2196F3",
-                style={
-                    "width": "99%",
-                    "height": "30px",
-                    "margin": "10px auto",
-                    "marginBottom": "10px"
-                }
-            )
-        ])
-        data = {"mode": "running", "size": size, "n": 0, "embeddings": []}
-        style = {
-            'padding': '10px 20px',
-            'fontSize': '16pt',
-            'borderRadius': '12px',
-            'border': 'none',
-            'backgroundColor': '#2196F3',
-            'color': 'white',
-            'cursor': 'pointer',
-            "width": "20vw",
-            "opacity": 0.5,
-            "marginBottom": "20px"
-        }
+        if len(df1) > 1:
+            # df1 = db0_to_db1().copy()
+            # global cls0
+            # cls0 = Clusteror("cls0", det0.df, det0.df_faces)
+            size = len(df1)
+            result = html.Div([
+                html.H2("Face Clustering", style={"textAlign": "center"}),
+                html.Hr(),
+                # dcc.Interval(id='progress_timer', interval=500, disabled=False),
+                dbc.Progress(
+                    id="progressbar0",
+                    label="0%",
+                    value=0,
+                    striped=True,
+                    animated=True,
+                    color="#2196F3",
+                    style={
+                        "width": "99%",
+                        "height": "30px",
+                        "margin": "10px auto",
+                        "marginBottom": "10px"
+                    }
+                )
+            ])
+            data = {"mode": "running", "size": size, "n": 0, "embeddings": []}
+            style = {
+                'padding': '10px 20px',
+                'fontSize': '16pt',
+                'borderRadius': '12px',
+                'border': 'none',
+                'backgroundColor': '#2196F3',
+                'color': 'white',
+                'cursor': 'pointer',
+                "width": "20vw",
+                "opacity": 0.5,
+                "marginBottom": "20px"
+            }
 
-        return result, data, False, True, style
-    else:
-        return dash.no_update, dash.no_update, False, False, dash.no_update
+            return result, data, False, True, style, ""
+        else:
+            txt = "At least two faces should be selected!"
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, txt
+
+    return dash.no_update, dash.no_update, False, False, dash.no_update, dash.no_update
 
 
 @callback(
@@ -750,15 +762,77 @@ def move_face_to_cls(n_clicks, value, index):
 
 @callback(
     Output("button3", "style", allow_duplicate=True),
+    Output("trigger_button3", "data", allow_duplicate=True),
+    # Output("successful_database", "children", allow_duplicate=True),
     Input("button3", "n_clicks"),
+    State("trigger_button3", "data"),
+    # State("name_of_db", "value"),
+    prevent_initial_call=True
+)
+def disable_btn3(n_clicks, data):
+    if n_clicks is not None and n_clicks > 0:
+        style = {
+            'padding': '10px 20px',
+            'fontSize': '16pt',
+            'borderRadius': '12px',
+            'border': 'none',
+            'backgroundColor': '#2196F3',
+            'color': 'white',
+            'cursor': 'pointer',
+            "width": "20vw",
+            "marginBottom": "20px",
+            "opacity": 0.5
+        }
+        print(data)
+        if data is None:
+            data = 0
+        else:
+            data += 1
+
+        return style, data
+        # global df0
+        # if re.fullmatch(r"[A-Za-z_]*", f"{value}"):
+        #     name = save_to_db(df0.copy(), cls0.df_faces.copy(), f"{value}")
+        #     style = {
+        #         'padding': '10px 20px',
+        #         'fontSize': '16pt',
+        #         'borderRadius': '12px',
+        #         'border': 'none',
+        #         'backgroundColor': '#4CAF50',
+        #         'color': 'white',
+        #         'cursor': 'pointer',
+        #         "width": "20vw",
+        #         "marginBottom": "20px",
+        #     }
+        #     txt = f"Success! Database saved as '{name}'"
+        #     return style, txt
+        # else:
+        #     style = {
+        #         'padding': '10px 20px',
+        #         'fontSize': '16pt',
+        #         'borderRadius': '12px',
+        #         'border': 'none',
+        #         'backgroundColor': '#F94449',
+        #         'color': 'white',
+        #         'cursor': 'pointer',
+        #         "width": "20vw",
+        #         "marginBottom": "20px",
+        #     }
+        #     txt = "The inputted name is not in the expected format."
+        #     return style, txt
+    return dash.no_update, dash.no_update
+
+@callback(
+    Output("button3", "style", allow_duplicate=True),
+    Output("successful_database", "children", allow_duplicate=True),
+    Input("trigger_button3", "data"),
     State("name_of_db", "value"),
     prevent_initial_call=True
 )
-def btn_click_save_to_db(n_clicks, value):
-    if n_clicks is not None and n_clicks > 0:
-        global df0
-        if re.fullmatch(r'[A-Za-z_ ]*', f"{value}"):
-            save_to_db(df0.copy(), cls0.df_faces.copy(), value)
+def btn_click_save_to_db(data, value):
+    if data is not None:
+        if re.fullmatch(r"[A-Za-z_]*", f"{value}"):
+            name = save_to_db(df0.copy(), cls0.df_faces.copy(), f"{value}")
             style = {
                 'padding': '10px 20px',
                 'fontSize': '16pt',
@@ -770,8 +844,23 @@ def btn_click_save_to_db(n_clicks, value):
                 "width": "20vw",
                 "marginBottom": "20px",
             }
-            return style
-    return dash.no_update
+            txt = f"Success! Database saved as '{name}'"
+            return style, txt
+        else:
+            style = {
+                'padding': '10px 20px',
+                'fontSize': '16pt',
+                'borderRadius': '12px',
+                'border': 'none',
+                'backgroundColor': '#F94449',
+                'color': 'white',
+                'cursor': 'pointer',
+                "width": "20vw",
+                "marginBottom": "20px",
+            }
+            txt = "The inputted name is not in the expected format."
+            return style, txt
+    return dash.no_update, dash.no_update
 
 
 

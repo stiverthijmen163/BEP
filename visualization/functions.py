@@ -1,3 +1,5 @@
+import sqlite3
+
 import pandas as pd
 from ultralytics import YOLO
 from PIL import Image
@@ -5,6 +7,7 @@ from typing import List, Tuple
 import cv2
 import numpy as np
 import json
+import os
 
 
 def yolo_to_haar(img: cv2.Mat, boxes: List[List[float]]) -> List[List[int]]:
@@ -125,7 +128,10 @@ def plot_faces_on_img_opacity(img: cv2.Mat, df: pd.DataFrame, show_nrs: bool = F
 
     return img
 
-def sort_items(lst: List[str]):
+def sort_items(lst: List[str]) -> List[str]:
+    """
+
+    """
     # Convert items to integers if possible
     lst_int = []
     lst_str = []
@@ -140,17 +146,70 @@ def sort_items(lst: List[str]):
     sorted_lst_int = [str(i) for i in sorted(lst_int)]
     sorted_lst_str = sorted(lst_str)
 
-    print(sorted_lst_int)
-    print(sorted_lst_str)
-    print(sorted_lst_int + sorted_lst_str)
-
+    # Return sorted list
     return sorted_lst_int + sorted_lst_str
 
 
-def save_to_db(df_main: pd.DataFrame, df_face: pd.DataFrame, name: str) -> None:
-    df_main["img"] = df_main["img"].apply(lambda x: json.dumps(x.tolist()))
-    print(df_main)
-    print(df_main.columns)
+def save_to_db(df_main: pd.DataFrame, df_face: pd.DataFrame, name: str) -> str:
+    """
+    Saves the two created dataframes to a database.
 
-    print(df_face)
-    print(df_face.columns)
+    :param df_main: dataframe containing all images and extra information
+    :param df_face: dataframe containing all faces
+    :param name: name of the database
+
+    :return: database name at which the data is actually stored
+    """
+    # Create path if needed
+    if not os.path.exists("databases"):
+        os.mkdir("databases")
+
+    # If the inputted name is not set
+    if name == "None" or name == "":
+        # Collect all saved databases
+        dbs = os.listdir("databases")
+
+        # Check if there are any databases in the standard format 'database_<number>.db'
+        lst_int = []
+        for db in dbs:
+            if db.endswith(".db") and "database_" in db:
+                try:
+                    db = db.strip(".db")
+                    if len(db.split("_")) == 2:
+                        i = int(db.split("_")[1])
+                        lst_int.append(i)
+                except ValueError:
+                    pass
+
+        if len(lst_int) > 0:
+            count = max(lst_int) + 1
+        else:
+            count = 0
+
+        name = f"database_{count}"
+
+    print(f"Saving data to 'databases/{name}.db'")
+
+    conn = sqlite3.connect(f"databases/{name}.db")
+
+    df_main["img"] = df_main["img"].apply(lambda x: json.dumps(x.tolist()))
+
+    df_main.to_sql("main", conn, if_exists="replace")
+
+    df_face["face"] = df_face["face"].apply(json.dumps)
+    df_face["img"] = df_face["img"].apply(lambda x: json.dumps(x.tolist()))
+    df_face["embedding"] = df_face["embedding"].apply(lambda x: ",".join(map(str, x.tolist())))
+    df_face["embedding_tsne"] = df_face["embedding_tsne"].apply(lambda x: ",".join(map(str, x.tolist())))
+
+    # Remove not needed columns if necessary
+    if "level_0" in df_face.columns:
+        df_face = df_face.drop("level_0", axis=1)
+    if "index" in df_face.columns:
+        df_face = df_face.drop("index", axis=1)
+    if "use" in df_face.columns:
+        df_face = df_face.drop("use", axis=1)
+
+    df_face.to_sql("faces", conn, if_exists="replace")
+
+    return f"{name}.db"
+

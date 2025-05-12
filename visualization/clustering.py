@@ -31,28 +31,29 @@ class Clusteror(html.Div):
         self.selected_index = 0
         self.selected_cluster = None
 
+        # Saving some data for hard-coded loading
         # self.df_faces["face"] = self.df_faces["face"].apply(json.dumps)
         # self.df_faces["img"] = self.df_faces["img"].apply(lambda x: json.dumps(x.tolist()))
         # # Save the embeddings
         # conn = sqlite3.connect("temp.db")
         # self.df_faces.to_sql("faces", conn, if_exists="replace")
 
-        # Load the embeddings
-        conn = sqlite3.connect("temp.db")
-        query = """SELECT * FROM faces"""
-        self.df_faces = pd.read_sql_query(query, conn)
-        self.df_faces["embedding_tsne"] = self.df_faces["embedding_tsne"].apply(lambda x: np.fromstring(x, sep=","))
-        self.df_faces["embedding"] = self.df_faces["embedding"].apply(lambda x: np.fromstring(x, sep=","))
-        self.df_faces["face"] = self.df_faces["face"].apply(json.loads)
-        self.df_faces["img"] = self.df_faces["img"].apply(json.loads)
-        self.df_faces["img"] = self.df_faces["img"].apply(lambda x: np.array(x, dtype=np.uint8))
-        self.df_faces["width"] = self.df_faces["face"].apply(lambda x: list(x)[2])
-        self.df_faces["height"] = self.df_faces["face"].apply(lambda x: list(x)[3])
+        # Load the embeddings (hard-coded)
+        # conn = sqlite3.connect("temp.db")
+        # query = """SELECT * FROM faces"""
+        # self.df_faces = pd.read_sql_query(query, conn)
+        # self.df_faces["embedding_tsne"] = self.df_faces["embedding_tsne"].apply(lambda x: np.fromstring(x, sep=","))
+        # self.df_faces["embedding"] = self.df_faces["embedding"].apply(lambda x: np.fromstring(x, sep=","))
+        # self.df_faces["face"] = self.df_faces["face"].apply(json.loads)
+        # self.df_faces["img"] = self.df_faces["img"].apply(json.loads)
+        # self.df_faces["img"] = self.df_faces["img"].apply(lambda x: np.array(x, dtype=np.uint8))
+        # self.df_faces["width"] = self.df_faces["face"].apply(lambda x: list(x)[2])
+        # self.df_faces["height"] = self.df_faces["face"].apply(lambda x: list(x)[3])
 
 
         # STILL NEEDED EVEN WHEN NOT LOADING FROM DB
-        # self.df_faces["embedding_tsne"] = self.df_faces["embedding_tsne"].apply(lambda x: np.fromstring(x, sep=","))
-        # self.df_faces["embedding"] = self.df_faces["embedding"].apply(lambda x: np.fromstring(x, sep=","))
+        self.df_faces["embedding_tsne"] = self.df_faces["embedding_tsne"].apply(lambda x: np.fromstring(x, sep=","))
+        self.df_faces["embedding"] = self.df_faces["embedding"].apply(lambda x: np.fromstring(x, sep=","))
 
         # Collect clusters
         labels = DBSCAN(eps=self.eps, min_samples=self.min_samples, n_jobs=-1, metric="euclidean").fit_predict(
@@ -445,7 +446,7 @@ class Clusteror(html.Div):
                                     dcc.Input(
                                         id="name_of_db",
                                         type="text",
-                                        placeholder="Only letters, spaces and '_' allowed",
+                                        placeholder="Only letters and '_' allowed",
                                         value="",
                                         style={"width": "30vw", "marginLeft": "1vw"}
                                     )],
@@ -491,6 +492,17 @@ class Clusteror(html.Div):
                                 "opacity": 0.5
                             },
                             id="button3"
+                        ),
+                        html.P(
+                            "",
+                            style = {
+                                "fontSize": "16pt",
+                                "marginBottom": "5px",
+                                "textAlign": "center",
+                                "margin": "5px",
+                                "fontWeight": "bold"
+                            },
+                            id="successful_database"
                         ),
                         html.Br()
                     ]
@@ -877,7 +889,31 @@ class Clusteror(html.Div):
                             # 'backgroundColor': '#e0e0e0',
                         },
                         children=[
-                            "Merge with cluster: ",
+                            html.Div([
+                                html.P(
+                                    [
+                                        "Merge with cluster:",
+                                        html.I(className="fa-solid fa-circle-question", id="info_icon_merge_cls",
+                                               style={"cursor": "pointer", "color": "#0d6efd",
+                                                      "marginLeft": "5px",
+                                                      "position": "relative",
+                                                      "top": "-3px"
+                                                      }),
+                                        " ",
+                                    ],
+                                    style={
+                                        "fontSize": "16pt",
+                                        "marginBottom": "5px",
+                                        "textAlign": "center",
+                                        "margin": "0"
+                                    },
+                                ),
+                                dbc.Tooltip(
+                                    "The name of the currently selected cluster is kept.",
+                                    target="info_icon_merge_cls",
+                                    placement="top"
+                                )
+                            ]),
                             html.Div(id="dropdown_merge_change", children=dcc.Dropdown(
                                 id="dropdown_cls_merge",
                                 options=items,
@@ -898,8 +934,6 @@ class Clusteror(html.Div):
                                     'color': 'white',
                                     'cursor': 'pointer',
                                     "width": "10vw",
-                                    # "marginLeft": "1vw",
-                                    # "marginTop": "5px"
                                 },
                                 id="button_merge_clusters"
                             )

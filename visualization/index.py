@@ -38,7 +38,7 @@ app.layout = html.Div(
                         }
                     ),
                     href='/',
-                    refresh=True
+                    refresh=False
                 ),
                 dcc.Link(
                     html.Button(
@@ -55,7 +55,7 @@ app.layout = html.Div(
                         }
                     ),
                     href='/page2',
-                    refresh=True
+                    refresh=False
                 )
             ]
         ),
