@@ -15,3 +15,4 @@
 /face_clustering/face_embeddings0
 /face_clustering/plots
 *.zip
+/visualization/databases
