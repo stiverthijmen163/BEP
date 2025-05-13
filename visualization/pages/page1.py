@@ -106,6 +106,59 @@ def images_to_db(contents, filename):
     return len(df0)
 
 
+def csv_to_db(contents, filename):
+    """
+
+    """
+    global df0
+    content_string = contents[0].split(',')[1]  # Remove the data URI prefix
+    decoded = base64.b64decode(content_string)
+
+    error_txt = []
+    length = 0
+    try:
+        # Read into pandas dataframe
+        df0 = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+        print(df0)
+        print(f"CSV file '{filename[0]}' uploaded successfully. Shape: {df0.shape}")
+
+        # length = 0
+        if {"id", "img"}.issubset(df0.columns):
+            for column in df0.columns:
+                if column == "url":
+                    df0["url"] = df0[column].apply(lambda x: f"{x}")
+                elif column == "img":
+                    try:
+                        df0["img"] = df0["img"].apply(json.loads)
+                        df0["img"] = df0["img"].apply(lambda x: np.array(x, dtype=np.uint8))
+                    except Exception as e:
+                        print(f"Column 'img' is not in the expected format: {e}")
+                        error_txt.append("Column 'img' is not in the expected format.")
+                elif column == "id":
+                    df0["id"] = df0["id"].apply(lambda x: str(x))
+                else:
+                    try:
+                        df0[column] = df0[column].apply(lambda x: json.loads(f"{x}"))
+                    except Exception as e:
+                        print(f"Error trying to load '{column}': {e}")
+                        error_txt.append(f"Column '{column}' is not in the expected format.")
+            if len(error_txt) > 0:
+                df0 = None
+            else:
+                length = len(df0)
+        else:
+            missing_cols = [col for col in ["id", "img"] if col not in df0.columns]
+            error_txt.append(f"Missing columns: {', '.join(missing_cols)}")
+
+        # return length, error_txt
+    except Exception as e:
+        print(f"Error reading CSV file: {str(e)}")
+        error_txt.append(f"Error reading CSV file: {str(e)}")
+        # return 0
+
+    return length, error_txt
+
+
 def db0_to_db1():
     """
 
@@ -154,12 +207,33 @@ def update_output(contents, filename):
 
         # Use if and only if one csv file was uploaded and nothing else
         if len(filename) == 1 and csv:
-            pass
+            # content_string = contents[0].split(',')[1]  # Remove the data URI prefix
+            # decoded = base64.b64decode(content_string)
+            #
+            # try:
+            #     # Read into pandas dataframe
+            #     df0 = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+            #     print(df0)
+            #     print(f"CSV file '{filename[0]}' uploaded successfully. Shape: {df0.shape}")
+            #
+            #     length = len(df0)
+            # except Exception as e:
+            #     print(f"Error reading CSV file: {str(e)}")
+            length, errors = csv_to_db(contents, filename)
+            if len(errors) > 0:
+                children = []
+                for e in errors:
+                    children.append(html.P(e))
+                return html.Div(children=children)
+
         # Use if and only if 1 or more images were uploaded and nothing else
         elif len(filename) > 0 and jpg_or_png:
             length = images_to_db(contents, filename)
         else:
             return html.Div(html.P("The upload requirements are not met..."))
+
+        if length == 0:
+            return html.Div(html.P("Uploaded 0 images, you should upload at least one image!"))
 
         # Return successfully and provide button to start face detection
         return html.Div(children=[

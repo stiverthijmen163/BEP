@@ -252,7 +252,7 @@ class Detector(html.Div):
                                                         id="min_width_det_input",
                                                         type="number",
                                                         min=0,
-                                                        max=max(self.df_faces["width"]),
+                                                        max=max(self.df_faces["width"]) if len(self.df_faces) > 0 else 1000,
                                                         step=1,
                                                         value=0,
                                                         style={"marginLeft": "10px", "width": "8%"}
@@ -262,7 +262,7 @@ class Detector(html.Div):
                                                         id="min_height_det_input",
                                                         type="number",
                                                         min=0,
-                                                        max=max(self.df_faces["height"]),
+                                                        max=max(self.df_faces["height"]) if len(self.df_faces) > 0 else 1000,
                                                         step=1,
                                                         value=0,
                                                         style={"marginLeft": "10px", "width": "8%"}
