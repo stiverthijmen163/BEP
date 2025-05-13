@@ -654,8 +654,14 @@ class Detector(html.Div):
 
         elif activated_by != "show_nrs":
             id = f"{self.selected_image}_{activated_by['index']}"
-            changed = checklist[activated_by['index']]
-            replace_val = False if changed == [] else True
+            try:
+                changed = checklist[activated_by['index']]
+                replace_val = False if changed == [] else True
+            except IndexError:  # In case the checklist hasn't been updated correctly (glitch)
+                if self.df_faces[self.df_faces["id"] == id]["use"].to_list()[0]:
+                    replace_val = False
+                else:
+                    replace_val = True
             print(replace_val)
             print(id)
 

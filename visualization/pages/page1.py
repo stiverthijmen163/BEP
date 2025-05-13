@@ -1,3 +1,5 @@
+import json
+
 import dash
 from dash import html, register_page, callback, Output, Input, dcc, State, ctx, ALL
 import dash_bootstrap_components as dbc
@@ -55,12 +57,12 @@ layout = html.Div(
                         'textAlign': 'center'
                     },
                     children=[
-                        html.P("Click the button to select a folder: You can either select any number of .jpg and .png files, or one .csv file. The csv-file should contain the following:", style={'fontSize': '14pt'}),
+                        html.P("Click the button to select files: You can either select any number of .jpg and .png files, or one .csv file. The csv-file should contain the following:", style={'fontSize': '14pt'}),
                         html.P("- The unique name of the image as 'id'", style={'fontSize': '14pt'}),
                         html.P("- The image as lists containing BGR-values as 'img'", style={'fontSize': '14pt'}),
                         # html.P("- Any extra information you may be interested in. This may only contain strings or numbers, url's must be in the 'url' column. Example:", style={'fontSize': '14pt'}),
                         html.P([
-                            "- Any extra information you may be interested in. This may only contain lists of strings, url's must be in the 'url' column. Example: ",
+                            "- Any extra information you may be interested in. This may only contain lists of strings: '['item1', 'item2']', url's must be in the 'url' column. Example: ",
                             html.A("GitHub", href="https://github.com/stiverthijmen163/BEP/blob/main/examples/example_csv.csv", target="_blank", style={'color': '#1d4ed8', 'textDecoration': 'underline'}),
                         ],
                         style={'fontSize': '14pt'}),
@@ -139,6 +141,8 @@ def csv_to_db(contents, filename):
                 else:
                     try:
                         df0[column] = df0[column].apply(lambda x: json.loads(f"{x}"))
+                        print(df0[column])
+                        df0[column] = df0[column].apply(json.dumps)
                     except Exception as e:
                         print(f"Error trying to load '{column}': {e}")
                         error_txt.append(f"Column '{column}' is not in the expected format.")

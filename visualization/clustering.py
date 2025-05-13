@@ -39,21 +39,21 @@ class Clusteror(html.Div):
         # self.df_faces.to_sql("faces", conn, if_exists="replace")
 
         # Load the embeddings (hard-coded)
-        # conn = sqlite3.connect("temp.db")
-        # query = """SELECT * FROM faces"""
-        # self.df_faces = pd.read_sql_query(query, conn)
-        # self.df_faces["embedding_tsne"] = self.df_faces["embedding_tsne"].apply(lambda x: np.fromstring(x, sep=","))
-        # self.df_faces["embedding"] = self.df_faces["embedding"].apply(lambda x: np.fromstring(x, sep=","))
-        # self.df_faces["face"] = self.df_faces["face"].apply(json.loads)
-        # self.df_faces["img"] = self.df_faces["img"].apply(json.loads)
-        # self.df_faces["img"] = self.df_faces["img"].apply(lambda x: np.array(x, dtype=np.uint8))
-        # self.df_faces["width"] = self.df_faces["face"].apply(lambda x: list(x)[2])
-        # self.df_faces["height"] = self.df_faces["face"].apply(lambda x: list(x)[3])
+        conn = sqlite3.connect("temp.db")
+        query = """SELECT * FROM faces"""
+        self.df_faces = pd.read_sql_query(query, conn)
+        self.df_faces["embedding_tsne"] = self.df_faces["embedding_tsne"].apply(lambda x: np.fromstring(x, sep=","))
+        self.df_faces["embedding"] = self.df_faces["embedding"].apply(lambda x: np.fromstring(x, sep=","))
+        self.df_faces["face"] = self.df_faces["face"].apply(json.loads)
+        self.df_faces["img"] = self.df_faces["img"].apply(json.loads)
+        self.df_faces["img"] = self.df_faces["img"].apply(lambda x: np.array(x, dtype=np.uint8))
+        self.df_faces["width"] = self.df_faces["face"].apply(lambda x: list(x)[2])
+        self.df_faces["height"] = self.df_faces["face"].apply(lambda x: list(x)[3])
 
 
         # STILL NEEDED EVEN WHEN NOT LOADING FROM DB
-        self.df_faces["embedding_tsne"] = self.df_faces["embedding_tsne"].apply(lambda x: np.fromstring(x, sep=","))
-        self.df_faces["embedding"] = self.df_faces["embedding"].apply(lambda x: np.fromstring(x, sep=","))
+        # self.df_faces["embedding_tsne"] = self.df_faces["embedding_tsne"].apply(lambda x: np.fromstring(x, sep=","))
+        # self.df_faces["embedding"] = self.df_faces["embedding"].apply(lambda x: np.fromstring(x, sep=","))
 
         # Collect clusters
         labels = DBSCAN(eps=self.eps, min_samples=self.min_samples, n_jobs=-1, metric="euclidean").fit_predict(
