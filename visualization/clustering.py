@@ -759,6 +759,8 @@ class Clusteror(html.Div):
                 d = 0
             else:
                 d = data + 1
+                if data:  # Update text to allow for selecting images
+                    showing_cls = f"Showing cluster '{value}'. Select a face to move to another cluster"
 
             return children, new_txt, showing_cls, True, right_disabled, style_left, style_right, d
         else:
@@ -996,9 +998,11 @@ class Clusteror(html.Div):
                 "marginBottom": "20px"
             }
 
-            return children, True, False, style
+            new_txt = f"Showing cluster '0'. Select a face to move to another cluster"
+
+            return children, True, False, style, new_txt
         else:
-            return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
     def change_name(self, n_clicks, name):

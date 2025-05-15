@@ -712,6 +712,7 @@ def update_components_change_cls(data):
     Output("enable_click_on_image", "data", allow_duplicate=True),
     Output("button3", "disabled", allow_duplicate=True),
     Output("button3", "style", allow_duplicate=True),
+    Output("showing_cluster0", "children", allow_duplicate=True),
     Input("button_continue_clusters", "n_clicks"),
     # State("dropdown_cls", "value"),
     prevent_initial_call=True
