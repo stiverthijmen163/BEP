@@ -28,3 +28,7 @@ scikit-learn==1.6.1
 gdown==5.2.0
 deepface==0.0.93
 tf-keras==2.19.0
+dash==3.0.4
+dash-bootstrap-components==2.0.2
+sympy==1.13.1
+plotly==6.0.1
