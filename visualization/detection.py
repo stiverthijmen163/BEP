@@ -176,7 +176,7 @@ class Detector(html.Div):
                             children=children,
                             id="box_images0"
                         ),
-                        dcc.Store(id="box_images0_index", data=0),
+                        dcc.Store(id="box_images0_index", data=0),  # Keeps track of the index of the first shown image
                         html.Div(
                             style={
                                 'display': 'flex',
@@ -350,9 +350,7 @@ class Detector(html.Div):
         # print(existing_children)
         updated_children = list(existing_children) + [result]
 
-        self.children = updated_children
-
-        return self.children
+        return updated_children
 
 
     # @callback(
