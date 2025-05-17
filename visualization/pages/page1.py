@@ -423,7 +423,6 @@ def on_image_click_detection(n_clicks):
 
     # Check which image was clicked on
     index = ctx.triggered_id["index"]
-    print(f"You clicked on image {index}")
 
     # Update output
     return det0.init_picture_fig(index)

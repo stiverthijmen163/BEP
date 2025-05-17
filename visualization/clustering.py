@@ -495,7 +495,9 @@ class Clusteror(html.Div):
             self.selected_index += 10
 
             # Collect the updated images to display and its corresponding components
-            children, _, right_disabled, style_left, style_right, new_txt, _ = self.update_displayed_images()
+            children, _, right_disabled, style_left, style_right, new_txt, nr = self.update_displayed_images()
+
+            print(f"Displaying the next {nr} images")
 
             # Update outputs
             return children, False, right_disabled, style_left, style_right, new_txt
