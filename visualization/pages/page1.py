@@ -392,12 +392,12 @@ def callback_next_button_detection(n_clicks, data):
     State("box_images0_index", "data"),
     prevent_initial_call=True
 )
-def callback_previous_button_detection(n_clicks, data):
+def callback_back_button_detection(n_clicks, data):
     """
-    Callback function that processes the click on the previous button for showing the previous 10 images
+    Callback function that processes the click on the 'back' button for showing the previous 10 images
     in the detection section.
 
-    :param n_clicks: number of clicks on 'previous' button
+    :param n_clicks: number of clicks on 'back' button
     :param data: the current index of the first shown image
     """
     # Update output
@@ -709,12 +709,12 @@ def callback_next_button_cls(n_clicks):
     Input("box_images1_left", "n_clicks"),
     prevent_initial_call=True
 )
-def callback_previous_button_cls(n_clicks):
+def callback_back_button_cls(n_clicks):
     """
-    Callback function that processes the click on the next button for showing the previous 10 images
+    Callback function that processes the click on the 'back' button for showing the previous 10 images
     in the clustering section.
 
-    :param n_clicks: number of clicks on 'previous' button
+    :param n_clicks: number of clicks on 'back' button
     """
     # Update output
     return cls0.previous_button(n_clicks)
@@ -984,7 +984,6 @@ def update_click_on_image_cls(data):
 
     :param data: the index of the image clicked on
     """
-    print(f"You clicked on image {data}")
     return cls0.select_image(data)
 
 
