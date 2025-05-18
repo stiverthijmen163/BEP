@@ -39,17 +39,15 @@ def yolo_to_haar(img: cv2.Mat, boxes: List[List[float]]) -> List[List[int]]:
     return res
 
 
-def detect_faces(img: cv2.Mat) -> Tuple[cv2.Mat, List[List[int]]]:
+def detect_faces(img: cv2.Mat, model: YOLO) -> Tuple[cv2.Mat, List[List[int]]]:
     """
     Detects faces on an image and plots the faces on the image.
 
     :param img: image to detect faces on
+    :param model: model to detect faces with
 
     :return: image with the faces plotted on top of it, bounding boxes of detected faces
     """
-    # Load in the model to detect faces with
-    model = YOLO("../face_detection/yolo_v12s/yolov12s-face/weights/epoch60.pt")
-
     # Collect all detected faces
     result = model(img, verbose=False)
 

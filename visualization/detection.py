@@ -59,10 +59,13 @@ class Detector(html.Div):
         df_faces_face = []  # bounding boxes for face
         df_faces_nr = []  # face number
 
+        # Load in the model to detect faces with
+        model = YOLO("../face_detection/yolo_v12s/yolov12s-face/weights/epoch60.pt")
+
         # Iterate over all uploaded images
         for _, row in self.df.copy().iterrows():
             # Detect faces and plot them on the image
-            img_w_faces, detections = detect_faces(row["img"].copy())
+            img_w_faces, detections = detect_faces(row["img"].copy(), model)
 
             # Append face image and detected faces to the lists
             images_faces.append(cv2.cvtColor(img_w_faces, cv2.COLOR_BGR2RGB))
