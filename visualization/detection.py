@@ -532,7 +532,10 @@ class Detector(html.Div):
                     box = [int(x0), int(y0), int(x1) - int(x0), int(y1) - int(y0)]
 
                     # Get the face number for the new face
-                    nr = max(self.df_faces[self.df_faces["img_id"] == self.selected_image]["nr"].to_list()) + 1
+                    try:  # Non-empty set of faces
+                        nr = max(self.df_faces[self.df_faces["img_id"] == self.selected_image]["nr"].to_list()) + 1
+                    except ValueError:  # Empty set of faces
+                        nr = 0
 
                     # Add face to the dataset
                     self.df_faces.loc[len(self.df_faces)] = [
