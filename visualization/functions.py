@@ -6,6 +6,28 @@ import cv2
 import numpy as np
 import json
 import os
+import base64
+
+
+def img_to_base64(img: np.array) -> str:
+    """
+    Transforms an image to base64 string.
+
+    :param img: image in np format to transform
+    """
+    _, buffer = cv2.imencode('.jpg', img)
+    return base64.b64encode(buffer).decode('utf-8')
+
+
+def base64_to_img(b64_string: str) -> cv2.Mat:
+    """
+    Transforms a base64 string back to an image.
+
+    :param b64_string: base64 string to transform
+    """
+    img_bytes = base64.b64decode(b64_string)
+    img_array = np.frombuffer(img_bytes, dtype=np.uint8)
+    return cv2.imdecode(img_array, cv2.IMREAD_COLOR)
 
 
 def yolo_to_haar(img: cv2.Mat, boxes: List[List[float]]) -> List[List[int]]:
@@ -204,14 +226,16 @@ def save_to_db(df_main: pd.DataFrame, df_face: pd.DataFrame, name: str) -> str:
     conn = sqlite3.connect(f"databases/{name}.db")
 
     # Change format of main dataframe to match SQL-database requirements
-    df_main["img"] = df_main["img"].apply(lambda x: json.dumps(x.tolist()))
+    # df_main["img"] = df_main["img"].apply(lambda x: json.dumps(x.tolist()))
+    df_main["img"] = df_main["img"].apply(lambda x: img_to_base64(x))
 
     # Save main dataframe to database
     df_main.to_sql("main", conn, if_exists="replace")
 
     # Change format of the faces dataframe to match SQL-database requirements
     df_face["face"] = df_face["face"].apply(json.dumps)
-    df_face["img"] = df_face["img"].apply(lambda x: json.dumps(x.tolist()))
+    # df_face["img"] = df_face["img"].apply(lambda x: json.dumps(x.tolist()))
+    df_face["img"] = df_face["img"].apply(lambda x: img_to_base64(x))
     df_face["embedding"] = df_face["embedding"].apply(lambda x: ",".join(map(str, x.tolist())))
     df_face["embedding_tsne"] = df_face["embedding_tsne"].apply(lambda x: ",".join(map(str, x.tolist())))
 
@@ -228,4 +252,3 @@ def save_to_db(df_main: pd.DataFrame, df_face: pd.DataFrame, name: str) -> str:
 
     # Return name of database
     return f"{name}.db"
-

@@ -9,6 +9,7 @@ from visualization.functions import *
 import re
 from visualization.detection import Detector
 from visualization.clustering import Clusteror
+import ast
 
 # Initialize dataframes and the placeholder for the clustering section
 df0 = None
@@ -132,8 +133,14 @@ def csv_to_db(contents, filename) -> Tuple[int, [List[str]]]:
                     df0["url"] = df0[column].apply(lambda x: f"{x}")
                 elif column == "img":  # Convert img into correct format
                     try:  # Convert to numpy format
-                        df0["img"] = df0["img"].apply(json.loads)
-                        df0["img"] = df0["img"].apply(lambda x: np.array(x, dtype=np.uint8))
+                        # df0["img"] = df0["img"].apply(lambda x: re.sub(r'\]\s+\[', '], [',
+                        #                                                        re.sub(r'(\d)\s+(\d)', r'\1, \2',
+                        #                                                               x.replace("\n ", ","))))
+                        # df0["img"] = df0["img"].apply(lambda x: np.array(ast.literal_eval(x), dtype=np.uint8))
+                        df0["img"] = df0["img"].apply(base64_to_img)
+                        print(df0["img"])
+                        # df0["img"] = df0["img"].apply(json.loads)
+                        # df0["img"] = df0["img"].apply(lambda x: np.array(x, dtype=np.uint8))
                     except Exception as e:  # Input format is incorrect
                         print(f"Column 'img' is not in the expected format: {e}")
                         error_txt.append("Column 'img' is not in the expected format.")
