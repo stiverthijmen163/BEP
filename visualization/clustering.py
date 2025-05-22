@@ -61,8 +61,6 @@ class Clusteror(html.Div):
         # self.df_faces["face"] = self.df_faces["face"].apply(json.loads)
         # self.df_faces["img"] = self.df_faces["img"].apply(json.loads)
         # self.df_faces["img"] = self.df_faces["img"].apply(lambda x: np.array(x, dtype=np.uint8))
-        # self.df_faces["width"] = self.df_faces["face"].apply(lambda x: list(x)[2])
-        # self.df_faces["height"] = self.df_faces["face"].apply(lambda x: list(x)[3])
 
         # --------------------------------------------------- <END> ----------------------------------------------------
 
