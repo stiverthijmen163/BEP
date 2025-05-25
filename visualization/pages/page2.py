@@ -7,6 +7,7 @@ from visualization.choose_face import ChooseFaceSection
 data_main = None
 data_face = None
 
+# Initialize the section where the user can choose a person of interest (poi)
 cfs0 = ChooseFaceSection("cfs0")
 
 # Set page
@@ -19,7 +20,7 @@ layout = html.Div([
         children=[
             html.H2("Face of Interest", style={"marginTop": "20px"}),  # Header
             html.Hr(),
-            html.Div(
+            html.Div(  # Blue box for the first section (choose poi)
                 style={
                     "backgroundColor": "#dbeafe",
                     "padding": "10px",
@@ -30,17 +31,16 @@ layout = html.Div([
                     "textAlign": "center"
                 },
                 children=[
-                    html.Div(
+                    html.Div(  # Allows components to be next to each other
                         style={
                             "display": "flex",
                             "justifyContent": "center",
                             "alignItems": "center",
-                            "gap": "1vw",
-                            # "marginBottom": "10px"
+                            "gap": "1vw"
                         },
-                        children=[
+                        children=[  # Choose database to load in
                             html.Label("Choose database:", style={"fontSize": "16pt"}),
-                            dcc.Dropdown(
+                            dcc.Dropdown(  # All db options
                                 id="dropdown_choose_database",
                                 options=sort_items(os.listdir("databases")),
                                 value=None,
@@ -49,7 +49,7 @@ layout = html.Div([
                                 searchable=True,
                                 style={"width": "40vw"}
                             ),
-                            html.Button(
+                            html.Button(  # Button to trigger loading the db
                                 "Load",
                                 disabled=False,
                                 id="button_load_db",
@@ -66,18 +66,26 @@ layout = html.Div([
                             )
                         ]
                     ),
-                    html.Div(id="feedback_load_data"),#, style={"marginTop": "20px", "fontWeight": "bold", "textFont": "16pt"}),
-                    cfs0
+                    html.Div(id="feedback_load_data"),  # Placeholder for feedback in case of errors
+                    cfs0  # the section to choose the poi
                 ]
             )
         ]
     ),
-    dcc.Store(id="trigger_read_database"),
+    dcc.Store(id="trigger_read_database")  # Triggers loading the database when 'button_load_db' disables
 ])
 
 
-def read_database(database_name):
-    print(database_name)
+def read_database(database_name: str) -> List[str]:
+    """
+    Reads a database and checks if all expected columns and types are present,
+    assumes that 'main' and 'faces' tables are present.
+
+    :param database_name: name of the database
+
+    :return: list of errors occurred while trying to read the database
+    """
+    print(f"Loading database: '{database_name}'")
 
     # Make the datasets accessible and editable
     global data_main, data_face
@@ -99,16 +107,22 @@ def read_database(database_name):
     # ---------------------------------------------------- MAIN DATA ---------------------------------------------------
     # Check if expected columns are present
     if {"id", "img"}.issubset(data_main.columns):
+        # Make sure 'id' column is in the right format
         data_main["id"] = data_main["id"].apply(str)
+
+        # Check if 'img' column is in the expected format
         try:
             data_main["img"] = data_main["img"].apply(base64_to_img)
         except Exception as e:
             print(f"Error trying to convert images from base64 to img: {e}")
             error_txt.append("Column 'img' is not in the expected format in 'main'.")
+
+        # Remaining columns
         for column in data_main.columns:
-            if column == "url":
+            if column == "url":  # Make sure 'url' column is in the right format
                 data_main[column] = data_main[column].apply(str)
             elif column not in ["id", "img"]:
+                # Check if column is in the expected format
                 try:
                     data_main[column] = data_main[column].apply(json.loads)
                 except Exception as e:
@@ -119,11 +133,13 @@ def read_database(database_name):
         error_txt.append(f"Missing column(s) in 'main': {', '.join(missing_cols)}")
 
     # ---------------------------------------------------- FACE DATA ---------------------------------------------------
+    # Convert columns to expected format
     data_face["embedding_tsne"] = data_face["embedding_tsne"].apply(lambda x: np.fromstring(x, sep=","))
     data_face["embedding"] = data_face["embedding"].apply(lambda x: np.fromstring(x, sep=","))
     data_face["face"] = data_face["face"].apply(json.loads)
     data_face["img"] = data_face["img"].apply(base64_to_img)
 
+    # Return the list of errors
     return error_txt
 
 
@@ -136,12 +152,22 @@ def read_database(database_name):
     prevent_initial_call=True
 )
 def trigger_select_new_database(n_clicks, data):
+    """
+    Callback function that disables the 'button_load_db' button when pressed
+    and updates the trigger to read the database.
+
+    :param n_clicks: number of clicks on the 'button_load_db' button
+    :param data: the data of the trigger to update
+    """
+    # Check if function call is triggered by clicking on 'button_load_db' button
     if n_clicks is not None and n_clicks > 0:
+        # Update the trigger's data
         if data is None:
             data = 0
         else:
             data += 1
 
+        # Update the style of the button to show the user it has been disabled
         style = {
             "padding": "10px 20px",
             "fontSize": "16pt",
@@ -154,7 +180,9 @@ def trigger_select_new_database(n_clicks, data):
             "opacity": 0.5
         }
 
+        # Update outputs
         return data, True, style
+    # No update
     return dash.no_update, dash.no_update
 
 
@@ -168,6 +196,13 @@ def trigger_select_new_database(n_clicks, data):
     prevent_initial_call=True
 )
 def select_new_database(data, value):
+    """
+    Callback function that reads date from the selected database and enables the 'button_load_db' button.
+
+    :param data: the data of the trigger that calls this function
+    :param value: the name of the database to read
+    """
+    # Update the style of the 'button_load_db' button to show the user it is enabled
     style = {
         "padding": "10px 20px",
         "fontSize": "16pt",
@@ -179,11 +214,17 @@ def select_new_database(data, value):
         "width": "10vw"
     }
 
+    # Check if a database has been selected
     if data is not None and value is not None and value != "":
+        # Make the datasets accessible and editable
         global data_face, data_main
+
+        # Read the database and collect the errors
         errors = read_database(value)
 
-        if len(errors) > 0:  # Return errors is there are any
+        # Return errors if there are any
+        if len(errors) > 0:
+            # Show all errors
             children = []
             for e in errors:
                 children.append(html.P(e))
@@ -192,9 +233,12 @@ def select_new_database(data, value):
             data_face = None
             data_main = None
         else:  # No errors
+            # No errors shown
             children = []
 
+        # Update outputs
         return False, style, children, cfs0.initialize_options(data_main, data_face)
+    # No update
     return False, style, dash.no_update, dash.no_update
 
 
@@ -207,8 +251,18 @@ def select_new_database(data, value):
     prevent_initial_call=True
 )
 def uploaded_image(contents, filename):
+    """
+    Callback function that updates the image figure to correspond with the uploaded image,
+    and updates the radio menu with the newly detected faces.
+
+    :param contents: the contents of the uploaded image
+    :param filename: the name of the uploaded image
+    """
+    # Check if uploaded file is an image in .jpg or .png format
     if filename.endswith(".jpg") or filename.endswith(".png"):
+        # Update outputs
         return cfs0.update_uploaded_image(contents)
+    # No update
     return dash.no_update, dash.no_update, dash.no_update
 
 
@@ -220,4 +274,42 @@ def uploaded_image(contents, filename):
     prevent_initial_call=True
 )
 def update_show_nrs(value):
+    """
+    Callback function that updates the image figure to enable/disabled showing the face numbers.
+
+    :param value: the value of the show_face_nrs checkbox
+    """
+    # Update outputs
     return cfs0.update_show_nrs_val(value)
+
+
+@callback(
+    Output("div_detect_right", "children", allow_duplicate=True),
+    Input("radio_selected_face", "value"),
+    prevent_initial_call=True
+)
+def update_poi(value):
+    """
+    Callback function that updates the selected poi according to the selected value in the radio menu,
+    this may be a cluster (use cluster) or a face (predict the corresponding cluster).
+
+    :param value: the selected poi from the radio menu
+    """
+    # Update outputs
+    return cfs0.update_right_half(value)
+
+
+@callback(
+    Output(f"{cfs0.html_id}_fig", "figure", allow_duplicate=True),
+    Output("radio_selected_face", "options", allow_duplicate=True),
+    Output("radio_selected_face", "value", allow_duplicate=True),
+    Input(f"{cfs0.html_id}_fig", "selectedData"),
+    prevent_initial_call=True
+)
+def new_face_selected(selectedData):
+    """
+    Callback function that updates the image figure to correspond with the uploaded image,
+    and updates the radio menu with the newly selected face when a selection is made in the figure.
+    """
+    # Update outputs
+    return cfs0.add_face(selectedData)
