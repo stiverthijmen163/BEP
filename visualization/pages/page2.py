@@ -3,6 +3,7 @@ from dash import html, register_page, dcc, callback, Input, Output, State
 from visualization.functions import *
 from visualization.choose_face import ChooseFaceSection
 from visualization.explore_selected_cluster import ExploreSelectedCluster
+from visualization.results import Results
 
 # Initialize global dataframe
 data_main = None
@@ -11,6 +12,7 @@ data_face = None
 # Initialize the section where the user can choose a person of interest (poi)
 cfs0 = ChooseFaceSection("cfs0")
 esc0 = ExploreSelectedCluster("esc0")
+res0 = Results("res0")
 
 # Set page
 register_page(__name__, path="/page2")
@@ -75,7 +77,9 @@ layout = html.Div([
         ]
     ),
     dcc.Store(id="trigger_read_database"),  # Triggers loading the database when 'button_load_db' disables
-    esc0  # Section where you can explore the selected cluster (poi)
+    dcc.Store(id="trigger_show_results"),  # Trigger that shows/updates the 'result' section's initialization
+    esc0,  # Section where you can explore the selected cluster (poi)
+    res0  # Section where all results are shown
 ])
 
 
@@ -354,17 +358,20 @@ def disable_to_results_button(n_clicks):
 
 @callback(
     Output(esc0.html_id, "children", allow_duplicate=True),
-    Output("button_continue_to_results", "disabled", allow_duplicate=True),
-    Output("button_continue_to_results", "style", allow_duplicate=True),
+    # Output("button_continue_to_results", "disabled", allow_duplicate=True),
+    # Output("button_continue_to_results", "style", allow_duplicate=True),
+    Output("trigger_show_results", "data", allow_duplicate=True),
     Input("button_continue_to_results", "disabled"),
+    State("trigger_show_results", "data"),
     prevent_initial_call=True
 )
-def initialize_results(disabled):
+def initialize_results(disabled, data):
     """
     Callback function that initializes the results sections when
     the 'show results' button is disabled (thus clicked on)
 
     :param disabled: whether the 'show results' button is disabled or not
+    :param data: trigger's data that initializes the results section
     """
     # Check if the 'show results' button is disabled
     if disabled:
@@ -386,10 +393,16 @@ def initialize_results(disabled):
             "marginTop": "1vw"
         }
 
+        # Update trigger to update the results section
+        if data is None:
+            data = 0
+        else:
+            data += 1
+
         # Update outputs
-        return esc0.initialize_esc(data_main, data_face, cfs0.selected_cluster), False, style
+        return esc0.initialize_esc(data_main, data_face, cfs0.selected_cluster), data#, False, style, data
     # No update
-    return dash.no_update, dash.no_update, dash.no_update
+    return dash.no_update, dash.no_update#, dash.no_update, dash.no_update
 
 
 @callback(
@@ -432,3 +445,30 @@ def previous_button_examples_cls(n_clicks):
     """
     # Update output
     return esc0.show_previous_example_images_cls(n_clicks)
+
+
+@callback(
+    Output(res0.html_id, "children", allow_duplicate=True),
+    Output("button_continue_to_results", "disabled", allow_duplicate=True),
+    Output("button_continue_to_results", "style", allow_duplicate=True),
+    Input("trigger_show_results", "data"),
+    prevent_initial_call=True
+)
+def initialize_res0(data):
+
+    if data is not None:
+        # Update the style of the 'show results' button to show the user it is enabled
+        style = {
+            "padding": "10px 20px",
+            "fontSize": "16pt",
+            "borderRadius": "12px",
+            "border": "none",
+            "backgroundColor": "#2196F3",
+            "color": "white",
+            "cursor": "pointer",
+            "width": "10vw",
+            "marginTop": "1vw"
+        }
+
+        return res0.initialize_res(esc0.df_main.copy(), esc0.df_faces.copy(), esc0.selected_cluster), False, style
+    return dash.no_update, dash.no_update, dash.no_update
