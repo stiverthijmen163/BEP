@@ -402,7 +402,7 @@ class Clusteror(html.Div):
                             children=children,  # Images to display
                             id="box_images1"
                         ),
-                        html.Div(  # Allows  content to be next to each other
+                        html.Div(  # Allows content to be next to each other
                             style={
                                 "display": "flex",
                                 "justifyContent": "space-between",

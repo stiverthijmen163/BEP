@@ -90,19 +90,20 @@ def detect_faces(img: cv2.Mat, model: YOLO) -> Tuple[cv2.Mat, List[List[int]]]:
     return img0, predictions
 
 
-def plot_faces_on_img(img: cv2.Mat, predictions: List[List[int]]) -> cv2.Mat:
+def plot_faces_on_img(img: cv2.Mat, predictions: List[List[int]], thickness: int = 2) -> cv2.Mat:
     """
     Plots all faces on an image.
 
     :param img: image to plot faces on
     :param predictions: list of bounding boxes of detected faces
+    :param thickness: thickness of the bounding boxes to plot
 
     :return: image with the faces plotted on top of it
     """
     # Plot predicted bounding boxes on image
     for box in predictions:
         x, y, w, h = box
-        cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), thickness)
 
     return img
 

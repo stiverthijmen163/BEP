@@ -2,6 +2,7 @@ import dash
 from dash import html, register_page, dcc, callback, Input, Output, State
 from visualization.functions import *
 from visualization.choose_face import ChooseFaceSection
+from visualization.explore_selected_cluster import ExploreSelectedCluster
 
 # Initialize global dataframe
 data_main = None
@@ -9,6 +10,7 @@ data_face = None
 
 # Initialize the section where the user can choose a person of interest (poi)
 cfs0 = ChooseFaceSection("cfs0")
+esc0 = ExploreSelectedCluster("esc0")
 
 # Set page
 register_page(__name__, path="/page2")
@@ -25,7 +27,7 @@ layout = html.Div([
                     "backgroundColor": "#dbeafe",
                     "padding": "10px",
                     "margin": "20px auto",
-                    "width": "100vw",
+                    "width": "100%",
                     "borderRadius": "12px",
                     "boxShadow": "0px 2px 5px rgba(0,0,0,0.1)",
                     "textAlign": "center"
@@ -72,7 +74,8 @@ layout = html.Div([
             )
         ]
     ),
-    dcc.Store(id="trigger_read_database")  # Triggers loading the database when 'button_load_db' disables
+    dcc.Store(id="trigger_read_database"),  # Triggers loading the database when 'button_load_db' disables
+    esc0  # Section where you can explore the selected cluster (poi)
 ])
 
 
@@ -313,3 +316,99 @@ def new_face_selected(selectedData):
     """
     # Update outputs
     return cfs0.add_face(selectedData)
+
+
+@callback(
+    Output("button_continue_to_results", "disabled", allow_duplicate=True),
+    Output("button_continue_to_results", "style", allow_duplicate=True),
+    Input("button_continue_to_results", "n_clicks"),
+    prevent_initial_call=True
+)
+def disable_to_results_button(n_clicks):
+    # Check if button click triggered this callback
+    if n_clicks is not None and n_clicks > 0:
+        style = {
+            "padding": "10px 20px",
+            "fontSize": "16pt",
+            "borderRadius": "12px",
+            "border": "none",
+            "backgroundColor": "#2196F3",
+            "color": "white",
+            "cursor": "pointer",
+            "width": "10vw",
+            "marginTop": "1vw",
+            "opacity": 0.5
+        }
+
+        return True, style
+    return dash.no_update, dash.no_update
+
+
+@callback(
+    Output(esc0.html_id, "children", allow_duplicate=True),
+    Output("button_continue_to_results", "disabled", allow_duplicate=True),
+    Output("button_continue_to_results", "style", allow_duplicate=True),
+    Input("button_continue_to_results", "disabled"),
+    prevent_initial_call=True
+)
+def initialize_results(disabled):
+    if disabled:
+        print("initializing")
+        global data_face, data_main
+
+        style = {
+            "padding": "10px 20px",
+            "fontSize": "16pt",
+            "borderRadius": "12px",
+            "border": "none",
+            "backgroundColor": "#2196F3",
+            "color": "white",
+            "cursor": "pointer",
+            "width": "10vw",
+            "marginTop": "1vw"
+        }
+
+        return esc0.initialize_esc(data_main, data_face, cfs0.selected_cluster), False, style
+    return dash.no_update, dash.no_update, dash.no_update
+
+
+@callback(
+    Output("example_images_cls_box", "children", allow_duplicate=True),
+    Output("box_ex_images_left", "disabled", allow_duplicate=True),
+    Output("box_ex_images_right", "disabled", allow_duplicate=True),
+    Output("box_ex_images_left", "style", allow_duplicate=True),
+    Output("box_ex_images_right", "style", allow_duplicate=True),
+    Output("images_showing_ex_cls_txt", "children", allow_duplicate=True),
+    Input("box_ex_images_right", "n_clicks"),
+    prevent_initial_call=True
+)
+def next_button_examples_cls(n_clicks):
+    """
+    Callback function that processes the click on the next button for showing the next 8 images
+    in the 'explore cluster' section.
+
+    :param n_clicks: number of clicks on 'next' button
+    """
+    # Update output
+    return esc0.show_next_example_images_cls(n_clicks)
+
+
+@callback(
+    Output("example_images_cls_box", "children", allow_duplicate=True),
+    Output("box_ex_images_left", "disabled", allow_duplicate=True),
+    Output("box_ex_images_right", "disabled", allow_duplicate=True),
+    Output("box_ex_images_left", "style", allow_duplicate=True),
+    Output("box_ex_images_right", "style", allow_duplicate=True),
+    Output("images_showing_ex_cls_txt", "children", allow_duplicate=True),
+    Input("box_ex_images_left", "n_clicks"),
+    prevent_initial_call=True
+)
+def previous_button_examples_cls(n_clicks):
+    """
+    Callback function that processes the click on the 'back' button for showing the previous 8 images
+    in the 'explore cluster' section.
+
+    :param n_clicks: number of clicks on 'back' button
+    """
+    # Update output
+    return esc0.show_previous_example_images_cls(n_clicks)

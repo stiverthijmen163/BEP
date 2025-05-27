@@ -29,6 +29,7 @@ class ChooseFaceSection(html.Div):
         self.img = None  # The currently loaded image
         self.show_nrs = False  # Whether to show face number in the currently loaded image or not
         self.selected_poi = None  # Keeps track of the selected person of interest (poi)
+        self.selected_cluster = None  # Keeps track of the cluster corresponding to the poi
         self.pipe_svc = None  # Face recognition model
 
         # Initialize ChooseFaceSection as an empty Div
@@ -70,7 +71,7 @@ class ChooseFaceSection(html.Div):
                     "justifyContent": "center",
                     "alignItems": "flex-start",
                     "gap": "10px",
-                    "width": "99vw",
+                    "width": "100%",
                     "margin": "0 auto",
                     "textAlign": "center",
                     "marginTop": "20px",
@@ -279,6 +280,7 @@ class ChooseFaceSection(html.Div):
         if radio_value is None or radio_value == "":
             # Update selected poi to empty
             self.selected_poi = None
+            self.selected_cluster = None
 
             # Update the layout of the right half
             children = html.Div(
@@ -326,6 +328,10 @@ class ChooseFaceSection(html.Div):
 
             # Check if certainty meets threshold value
             if certainty >= 0.5:  # More likely to be this cluster than another
+                # Update the selected cluster
+                self.selected_cluster = predicted_class
+
+                # Update layout
                 children = [
                     html.Div(  # Allows components to be next to each other
                         style={
@@ -385,6 +391,9 @@ class ChooseFaceSection(html.Div):
                     )
                 ]
             else:  # Likely that the model has not been trained on the input face
+                # Update selected cluster to None
+                self.selected_cluster = None
+
                 children = html.Div(
                 html.P(  # Display text saying that predicted class if likely to be wrong
                     f"Certainty of prediction was below the threshold ({certainty:.2f} < 0.50). Therefore it is likely that there exists no cluster for the selected person of interest.",
@@ -403,6 +412,7 @@ class ChooseFaceSection(html.Div):
         else:  # Poi is a cluster from the database
             # Update the selected poi to the selected cluster
             self.selected_poi = radio_value[1:]
+            self.selected_cluster = radio_value[1:]
 
             # Find the largest face to display as example
             self.df_face_selected_cluster = self.df_face[self.df_face["name"] == self.selected_poi].copy()
