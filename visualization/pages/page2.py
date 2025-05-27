@@ -325,8 +325,14 @@ def new_face_selected(selectedData):
     prevent_initial_call=True
 )
 def disable_to_results_button(n_clicks):
+    """
+    Callback function that disables the 'show results' button when clicked.
+
+    :param n_clicks: the number of clicks of the 'show results' button
+    """
     # Check if button click triggered this callback
     if n_clicks is not None and n_clicks > 0:
+        # Update style of the 'show results' button to show the user it is disabled
         style = {
             "padding": "10px 20px",
             "fontSize": "16pt",
@@ -340,7 +346,9 @@ def disable_to_results_button(n_clicks):
             "opacity": 0.5
         }
 
+        # Update outputs
         return True, style
+    # No update
     return dash.no_update, dash.no_update
 
 
@@ -352,10 +360,20 @@ def disable_to_results_button(n_clicks):
     prevent_initial_call=True
 )
 def initialize_results(disabled):
+    """
+    Callback function that initializes the results sections when
+    the 'show results' button is disabled (thus clicked on)
+
+    :param disabled: whether the 'show results' button is disabled or not
+    """
+    # Check if the 'show results' button is disabled
     if disabled:
         print("initializing")
+
+        # Make the datasets accessible
         global data_face, data_main
 
+        # Update the style of the 'show results' button to show the user it is enabled
         style = {
             "padding": "10px 20px",
             "fontSize": "16pt",
@@ -368,7 +386,9 @@ def initialize_results(disabled):
             "marginTop": "1vw"
         }
 
+        # Update outputs
         return esc0.initialize_esc(data_main, data_face, cfs0.selected_cluster), False, style
+    # No update
     return dash.no_update, dash.no_update, dash.no_update
 
 
