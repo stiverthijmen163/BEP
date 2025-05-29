@@ -92,7 +92,7 @@ def read_database(database_name: str) -> List[str]:
 
     :return: list of errors occurred while trying to read the database
     """
-    print(f"Loading database: '{database_name}'")
+    print(f"(Page 2)              - Loading database: '{database_name}'")
 
     # Make the datasets accessible and editable
     global data_main, data_face
@@ -121,7 +121,7 @@ def read_database(database_name: str) -> List[str]:
         try:
             data_main["img"] = data_main["img"].apply(base64_to_img)
         except Exception as e:
-            print(f"Error trying to convert images from base64 to img: {e}")
+            print(f"(Page 2)              - Error trying to convert images from base64 to img: {e}")
             error_txt.append("Column 'img' is not in the expected format in 'main'.")
 
         # Remaining columns
@@ -133,7 +133,7 @@ def read_database(database_name: str) -> List[str]:
                 try:
                     data_main[column] = data_main[column].apply(json.loads)
                 except Exception as e:
-                    print(f"Error trying to load '{column}': {e}")
+                    print(f"(Page 2)              - Error trying to load '{column}': {e}")
                     error_txt.append(f"Column '{column}' is not in the expected format in 'main'.")
     else:  # Check which columns are missing
         missing_cols = [col for col in ["id", "img"] if col not in data_main.columns]
@@ -358,8 +358,6 @@ def disable_to_results_button(n_clicks):
 
 @callback(
     Output(esc0.html_id, "children", allow_duplicate=True),
-    # Output("button_continue_to_results", "disabled", allow_duplicate=True),
-    # Output("button_continue_to_results", "style", allow_duplicate=True),
     Output("trigger_show_results", "data", allow_duplicate=True),
     Input("button_continue_to_results", "disabled"),
     State("trigger_show_results", "data"),
@@ -375,23 +373,9 @@ def initialize_results(disabled, data):
     """
     # Check if the 'show results' button is disabled
     if disabled:
-        print("initializing")
 
         # Make the datasets accessible
         global data_face, data_main
-
-        # Update the style of the 'show results' button to show the user it is enabled
-        style = {
-            "padding": "10px 20px",
-            "fontSize": "16pt",
-            "borderRadius": "12px",
-            "border": "none",
-            "backgroundColor": "#2196F3",
-            "color": "white",
-            "cursor": "pointer",
-            "width": "10vw",
-            "marginTop": "1vw"
-        }
 
         # Update trigger to update the results section
         if data is None:
@@ -400,9 +384,9 @@ def initialize_results(disabled, data):
             data += 1
 
         # Update outputs
-        return esc0.initialize_esc(data_main, data_face, cfs0.selected_cluster), data#, False, style, data
+        return esc0.initialize_esc(data_main, data_face, cfs0.selected_cluster), data
     # No update
-    return dash.no_update, dash.no_update#, dash.no_update, dash.no_update
+    return dash.no_update, dash.no_update
 
 
 @callback(
@@ -422,7 +406,7 @@ def next_button_examples_cls(n_clicks):
 
     :param n_clicks: number of clicks on 'next' button
     """
-    # Update output
+    # Update outputs
     return esc0.show_next_example_images_cls(n_clicks)
 
 
@@ -443,7 +427,7 @@ def previous_button_examples_cls(n_clicks):
 
     :param n_clicks: number of clicks on 'back' button
     """
-    # Update output
+    # Update outputs
     return esc0.show_previous_example_images_cls(n_clicks)
 
 
@@ -455,7 +439,12 @@ def previous_button_examples_cls(n_clicks):
     prevent_initial_call=True
 )
 def initialize_res0(data):
+    """
+    Callback function that initializes the results sections when the 'show results' button is clicked on.
 
+    :param data: trigger's data that called this function
+    """
+    # Check if data exists
     if data is not None:
         # Update the style of the 'show results' button to show the user it is enabled
         style = {
@@ -470,5 +459,93 @@ def initialize_res0(data):
             "marginTop": "1vw"
         }
 
-        return res0.initialize_res(esc0.df_main.copy(), esc0.df_faces.copy(), esc0.selected_cluster), False, style
+        # Update outputs
+        return res0.initialize_res(esc0.df_main.copy(), esc0.df_faces.copy(), esc0.selected_cluster, esc0.df_selected_cluster.copy()), False, style
+    # No update
     return dash.no_update, dash.no_update, dash.no_update
+
+
+@callback(
+    Output("example_images_res_box", "children", allow_duplicate=True),
+    Output("box_res_images_left", "disabled", allow_duplicate=True),
+    Output("box_res_images_right", "disabled", allow_duplicate=True),
+    Output("box_res_images_left", "style", allow_duplicate=True),
+    Output("box_res_images_right", "style", allow_duplicate=True),
+    Output("images_showing_res_cls_txt", "children", allow_duplicate=True),
+    Output("persons_showing_res_cls_txt", "children", allow_duplicate=True),
+    Output(f"div_{res0.html_id}_v_fig", "children", allow_duplicate=True),
+    Input(f"{res0.html_id}_h_fig", "clickData"),
+    State("dropdown_choose_add_data", "value"),
+    prevent_initial_call=True
+)
+def update_clicked_data(click_data, value):
+    """
+    Callback function that updates the results section to contain only the images where the
+    clicked bar (= a person) exists in, updates the vertical bar chart and the example images to display.
+
+    :param click_data: clickData of the vertical bar chart, containing the bar clicked on
+    :param value: name of column to display additional information from
+    """
+    # Check if a bar has been selected
+    if click_data is not None:
+        # Update outputs
+        return res0.bar_clicked_update(click_data["points"][0]["y"], value)
+    # No update
+    return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+
+@callback(
+    Output("example_images_res_box", "children", allow_duplicate=True),
+    Output("box_res_images_left", "disabled", allow_duplicate=True),
+    Output("box_res_images_right", "disabled", allow_duplicate=True),
+    Output("box_res_images_left", "style", allow_duplicate=True),
+    Output("box_res_images_right", "style", allow_duplicate=True),
+    Output("images_showing_res_cls_txt", "children", allow_duplicate=True),
+    Input("box_res_images_right", "n_clicks"),
+    prevent_initial_call=True
+)
+def next_button_examples_res(n_clicks):
+    """
+    Callback function that processes the click on the next button for showing the next 8 images
+    in the 'results' section.
+
+    :param n_clicks: number of clicks on 'next' button
+    """
+    # Update outputs
+    return res0.show_next_example_images_res(n_clicks)
+
+
+@callback(
+    Output("example_images_res_box", "children", allow_duplicate=True),
+    Output("box_res_images_left", "disabled", allow_duplicate=True),
+    Output("box_res_images_right", "disabled", allow_duplicate=True),
+    Output("box_res_images_left", "style", allow_duplicate=True),
+    Output("box_res_images_right", "style", allow_duplicate=True),
+    Output("images_showing_res_cls_txt", "children", allow_duplicate=True),
+    Input("box_res_images_left", "n_clicks"),
+    prevent_initial_call=True
+)
+def previous_button_examples_res(n_clicks):
+    """
+    Callback function that processes the click on the 'back' button for showing the previous 8 images
+    in the 'results' section.
+
+    :param n_clicks: number of clicks on 'back' button
+    """
+    # Update outputs
+    return res0.show_previous_example_images_res(n_clicks)
+
+
+@callback(
+    Output(f"div_{res0.html_id}_v_fig", "children", allow_duplicate=True),
+    Input("dropdown_choose_add_data", "value"),
+    prevent_initial_call=True
+)
+def update_dropdown_val_results(dropdown_value):
+    """
+    Callback function that updates the vertical bar chart when a new dropdown value has been selected.
+
+    :param dropdown_value: name of column to display additional information from
+    """
+    # Update output
+    return res0.change_add_info(dropdown_value)

@@ -38,7 +38,7 @@ class ExploreSelectedCluster(html.Div):
         :param df_faces: dataframe containing all faces in all images
         :param selected_cluster: the cluster corresponding to the selected person of interest
         """
-        print("Initializing ExploreSelectedCluster object")
+        print("(Cluster Exploration) - Initializing ExploreSelectedCluster object")
 
         # Update the object's parameters
         self.df_main = df_main.copy()
@@ -68,6 +68,9 @@ class ExploreSelectedCluster(html.Div):
             # Collect the corresponding url
             if "url" in self.df_main.columns:
                 self.image_links.append(self.df_main[self.df_main["id"] == id]["url"].to_list()[0])
+
+        # Add the images with the plotted poi on it to the dataset
+        self.df_selected_cluster["img_w_poi"] = self.images
 
         # Introduce a new column which helps to define the color for the scatterplot
         self.df_faces["color"] = self.df_faces["name"].apply(lambda x: self.selected_cluster if x == self.selected_cluster else "Other")
@@ -191,7 +194,7 @@ class ExploreSelectedCluster(html.Div):
             # Collect the updated images to display and its corresponding components
             children, _, right_disabled, style_left, style_right, new_txt, nr = self.update_example_images_cls()
 
-            print(f"Displaying the next {nr} images")
+            print(f"(Cluster Exploration) - Displaying the next {nr} images")
 
             # Update outputs
             return children, False, right_disabled, style_left, style_right, new_txt
@@ -207,7 +210,7 @@ class ExploreSelectedCluster(html.Div):
         """
         # If this function is trigger by a button click
         if n_clicks is not None and n_clicks > 0:
-            print(f"Displaying the previous 8 images")
+            print(f"(Cluster Exploration) - Displaying the previous 8 images")
 
             # Update the index
             self.selected_index -= 8

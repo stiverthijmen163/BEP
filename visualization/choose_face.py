@@ -43,7 +43,7 @@ class ChooseFaceSection(html.Div):
         :param main: dataframe containing all info regarding the main images
         :param faces: dataframe containing all faces in all images
         """
-        print("Initializing ChooseFaceSection object")
+        print("(Choose POI)          - Initializing ChooseFaceSection object")
 
         # Update the dataframes
         self.df_main = main.copy()
@@ -144,7 +144,7 @@ class ChooseFaceSection(html.Div):
                                                 dcc.RadioItems(  # Radio menu to select at most one face
                                                     id="radio_selected_face",
                                                     options=[f" {i}" for i in
-                                                             sort_items(self.df_face["name"].unique())],
+                                                             sort_items([j for j in self.df_face["name"].unique() if j.lower() not in ["unknown"]])],
                                                     labelStyle={"fontSize": "16pt"},
                                                 )
                                             )
@@ -192,7 +192,7 @@ class ChooseFaceSection(html.Div):
 
         :param c: uploaded image content
         """
-        print("Uploaded image, detecting faces")
+        print("(Choose POI)          - Uploaded image, detecting faces")
 
         # Decode the image
         content_type, content_string = c.split(",")
@@ -223,7 +223,7 @@ class ChooseFaceSection(html.Div):
 
         :param value: value of show_nrs checkbox
         """
-        print(f"Updating show_nrs parameter to {True if value != [] else False}")
+        print(f"(Choose POI)          - Updating show_nrs parameter to {True if value != [] else False}")
 
         # Update the value whether to show face numbers or not
         self.show_nrs = True if value != [] else False
@@ -246,7 +246,7 @@ class ChooseFaceSection(html.Div):
 
         :param selected_val: the selected value of the radio menu
         """
-        print(f"Updating image figure and radio menu")
+        print(f"(Choose POI)          - Updating image figure and radio menu")
 
         # Plot all faces on the image
         img_w_faces = plot_faces_on_img_opacity(self.img.copy(), self.df_faces_uploaded.copy(), self.show_nrs)
@@ -262,7 +262,7 @@ class ChooseFaceSection(html.Div):
 
         # Update the options in the radio menu
         options = ([f" Face {row['nr']}" for _, row in self.df_faces_uploaded.iterrows()]
-                   + [f" {i}" for i in sort_items(self.df_face["name"].unique())])
+                   + [f" {i}" for i in sort_items([j for j in self.df_face["name"].unique() if j.lower() not in ["unknown"]])])
 
         # Update outputs
         return fig, options, selected_val
@@ -274,7 +274,7 @@ class ChooseFaceSection(html.Div):
 
         :param radio_value: the selected value of the radio menu, this can be a face from the image or a cluster
         """
-        print(f"Updating selected POI to '{radio_value}' (right half)")
+        print(f"(Choose POI)          - Updating selected POI to '{radio_value}' (right half)")
 
         # If no poi has been selected
         if radio_value is None or radio_value == "":
@@ -359,16 +359,23 @@ class ChooseFaceSection(html.Div):
                             ),
                             html.Div(  # Show an example of the predicted poi
                                 style={
-                                    "width": "48%"
+                                    "width": "48%",
+                                    "overflow": "visible"
                                 },
                                 children=[
-                                    html.P(f"Predicted '{predicted_class}' with {certainty:.2f} certainty:", style={"fontSize": "16pt"}),
-                                    html.Img(src=Image.fromarray(cv2.cvtColor(predicted_face_img, cv2.COLOR_BGR2RGB)), style={
-                                        "width": "100%",
-                                        "cursor": "pointer",
-                                        "maxHeight": "16vw",
-                                        "objectFit": "contain",
-                                    }),
+                                    html.P(f"Predicted '{predicted_class}' with {certainty:.2f} certainty:",
+                                        style={
+                                            "fontSize": "16pt", "overflow": "visible",
+                                            "position": "relative", "whiteSpace": "nowrap"
+                                        }),
+                                    html.Img(src=Image.fromarray(cv2.cvtColor(predicted_face_img, cv2.COLOR_BGR2RGB)),
+                                        style={
+                                            "width": "100%",
+                                            "cursor": "pointer",
+                                            "maxHeight": "16vw",
+                                            "objectFit": "contain",
+                                        }
+                                    ),
                                 ]
                             )
                         ]
@@ -459,7 +466,7 @@ class ChooseFaceSection(html.Div):
             points = selection.get("range", {})
             x0, x1 = points.get("x", [None, None])
             y0, y1 = points.get("y", [None, None])
-            print(f"Manually added face, selected area: x=({x0}, {x1}), y=({y0}, {y1})")
+            print(f"(Choose POI)          - Manually added face, selected area: x=({x0}, {x1}), y=({y0}, {y1})")
 
             # If all coordinates exist
             if x0 and x1 and y0 and y1:
