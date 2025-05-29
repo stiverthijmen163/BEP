@@ -97,7 +97,7 @@ def images_to_db(contents, filename) -> int:
     # Create dataframe and assign it to the global variable df0
     df0 = pd.DataFrame({"id": file_names, "img": images})
 
-    print(f"Uploaded {len(df0)} images successfully")
+    print(f"(Page 1)              - Uploaded {len(df0)} images successfully")
 
     return len(df0)
 
@@ -124,7 +124,7 @@ def csv_to_db(contents, filename) -> Tuple[int, [List[str]]]:
     try:  # Try to read the csv-file
         # Read the data
         df0 = pd.read_csv(io.StringIO(decoded.decode("utf-8")))
-        print(f"CSV file '{filename[0]}' uploaded successfully. Shape: {df0.shape}")
+        print(f"(Page 1)              - CSV file '{filename[0]}' uploaded successfully. Shape: {df0.shape}")
 
         # Check if expected columns are present
         if {"id", "img"}.issubset(df0.columns):
@@ -133,16 +133,9 @@ def csv_to_db(contents, filename) -> Tuple[int, [List[str]]]:
                     df0["url"] = df0[column].apply(lambda x: f"{x}")
                 elif column == "img":  # Convert img into correct format
                     try:  # Convert to numpy format
-                        # df0["img"] = df0["img"].apply(lambda x: re.sub(r'\]\s+\[', '], [',
-                        #                                                        re.sub(r'(\d)\s+(\d)', r'\1, \2',
-                        #                                                               x.replace("\n ", ","))))
-                        # df0["img"] = df0["img"].apply(lambda x: np.array(ast.literal_eval(x), dtype=np.uint8))
                         df0["img"] = df0["img"].apply(base64_to_img)
-                        print(df0["img"])
-                        # df0["img"] = df0["img"].apply(json.loads)
-                        # df0["img"] = df0["img"].apply(lambda x: np.array(x, dtype=np.uint8))
                     except Exception as e:  # Input format is incorrect
-                        print(f"Column 'img' is not in the expected format: {e}")
+                        print(f"(Page 1)              - Column 'img' is not in the expected format: {e}")
                         error_txt.append("Column 'img' is not in the expected format.")
                 elif column == "id":  # Make sure format is tring
                     df0["id"] = df0["id"].apply(lambda x: str(x))
@@ -151,7 +144,7 @@ def csv_to_db(contents, filename) -> Tuple[int, [List[str]]]:
                         df0[column] = df0[column].apply(lambda x: json.loads(f"{x}"))
                         df0[column] = df0[column].apply(json.dumps)
                     except Exception as e:  # Input not in expected format
-                        print(f"Error trying to load '{column}': {e}")
+                        print(f"(Page 1)              - Error trying to load '{column}': {e}")
                         error_txt.append(f"Column '{column}' is not in the expected format.")
             if len(error_txt) > 0:  # Remove df0 is errors occurred
                 df0 = None
@@ -161,10 +154,10 @@ def csv_to_db(contents, filename) -> Tuple[int, [List[str]]]:
             missing_cols = [col for col in ["id", "img"] if col not in df0.columns]
             error_txt.append(f"Missing columns: {', '.join(missing_cols)}")
     except Exception as e:  # Can't read csv-file
-        print(f"Error reading CSV file: {str(e)}")
+        print(f"(Page 1)              - Error reading CSV file: {str(e)}")
         error_txt.append(f"Error reading CSV file: {str(e)}")
 
-    print(f"Processed {length} images successfully")
+    print(f"(Page 1)              - Processed {length} images successfully")
 
     return length, error_txt
 
@@ -173,7 +166,7 @@ def db0_to_db1():
     """
     Transitions from the detection dataset to the clustering dataset.
     """
-    print("Transforming database...")
+    print("(Page 1)              - Transforming database to contain faces")
     # Collect the detection dataset only containing the selected images
     df_use_faces = det0.df_detected[det0.df_detected["use"] == True].copy()
 
@@ -196,7 +189,6 @@ def db0_to_db1():
 
     # Append all faces to the dataset
     df_use_faces["img"] = faces
-    print("DONE")
 
     return df_use_faces.reset_index()
 

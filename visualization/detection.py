@@ -44,7 +44,7 @@ class Detector(html.Div):
 
         :param df: dataframe containing all images and their corresponding id's
         """
-        print(f"Initializing the Detector object: '{self.html_id}'")
+        print(f"(Face Detection)      - Initializing the Detector object: '{self.html_id}'")
 
         # Update the current dataset
         self.df = df.copy()
@@ -349,7 +349,7 @@ class Detector(html.Div):
             # Collect the updated images to display and its corresponding components
             children, _, right_disabled, style_left, style_right, new_txt, nr = self.update_displayed_images()
 
-            print(f"Displaying the next {nr} images")
+            print(f"(Face Detection)      - Displaying the next {nr} images")
              # Update outputs
             return new_index, children, False, right_disabled, style_left, style_right, new_txt
         # No update
@@ -365,7 +365,7 @@ class Detector(html.Div):
         """
         # If the 'back' button has triggered this function
         if n_clicks is not None and n_clicks > 0:
-            print("Displaying the previous 10 images")
+            print("(Face Detection)      - Displaying the previous 10 images")
 
             # Update index
             new_index = current_index - 10
@@ -386,7 +386,7 @@ class Detector(html.Div):
 
         :param image_nr: index of the image clicked on
         """
-        print(f"Initialize picture fig to contain image {image_nr}")
+        print(f"(Face Detection)      - Initialize picture fig to contain image {image_nr}")
 
         # Collect the image index
         index = self.selected_index + image_nr
@@ -524,10 +524,11 @@ class Detector(html.Div):
                 points = selection.get("range", {})
                 x0, x1 = points.get("x", [None, None])
                 y0, y1 = points.get("y", [None, None])
-                print(f"Manually added face, selected area: x=({x0}, {x1}), y=({y0}, {y1})")
 
                 # If all coordinates exist
                 if x0 and x1 and y0 and y1:
+                    print(f"(Face Detection)      - Manually added face, selected area: x=({x0}, {x1}), y=({y0}, {y1})")
+
                     # Get the bounding box of the manually added face
                     box = [int(x0), int(y0), int(x1) - int(x0), int(y1) - int(y0)]
 
@@ -577,7 +578,7 @@ class Detector(html.Div):
                 return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
         # Min_size updated, only if function is activated by the 'update detections' button
         elif activated_by == "button_update_detections" and n_clicks is not None and n_clicks > 0:
-            print(f"Updated min_size to (f{w}, f{h})")
+            print(f"(Face Detection)      - Updated min_size to ({w}, {h})")
 
             # Update the min sizes
             self.update_min_size(w, h)
@@ -616,7 +617,7 @@ class Detector(html.Div):
                 else:
                     replace_val = True
 
-            print(f"{'Checked' if replace_val else 'Unchecked'} checkbox of face '{id}'")
+            print(f"(Face Detection)      - {'Checked' if replace_val else 'Unchecked'} checkbox of face '{id}'")
 
             # Update the dataset
             self.df_faces.loc[self.df_faces["id"] == id, "use"] = replace_val
@@ -636,7 +637,7 @@ class Detector(html.Div):
             else:
                 result_txt = f"Removed 'Face {activated_by['index']}' from the set of faces:"
         else:  # No change in selected faces
-            print(f"{'Checked' if self.show_nrs else 'Unchecked'} checkbox to show face numbers")
+            print(f"(Face Detection)      - {'Checked' if self.show_nrs else 'Unchecked'} checkbox to show face numbers")
             result = dash.no_update
             result_txt = dash.no_update
 

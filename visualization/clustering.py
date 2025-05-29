@@ -26,7 +26,7 @@ class Clusteror(html.Div):
         :param df: dataframe containing the data of all images
         :param df_faces: dataframe containing the faces of all images
         """
-        print(f"Initializing the Clusteror object: '{name}'")
+        print(f"(Face Clustering)     - Initializing the Clusteror object: '{name}'")
 
         # Initialize all variables for the Clusteror object
         self.html_id = name
@@ -495,7 +495,7 @@ class Clusteror(html.Div):
             # Collect the updated images to display and its corresponding components
             children, _, right_disabled, style_left, style_right, new_txt, nr = self.update_displayed_images()
 
-            print(f"Displaying the next {nr} images")
+            print(f"(Face Clustering)     - Displaying the next {nr} images")
 
             # Update outputs
             return children, False, right_disabled, style_left, style_right, new_txt
@@ -511,7 +511,7 @@ class Clusteror(html.Div):
         """
         # If this function is trigger by a button click
         if n_clicks is not None and n_clicks > 0:
-            print(f"Displaying the previous 10 images")
+            print(f"(Face Clustering)     - Displaying the previous 10 images")
 
             # Update the index
             self.selected_index -= 10
@@ -537,7 +537,7 @@ class Clusteror(html.Div):
         """
         # Check if clusters should be updated
         if data is not None and data:
-            print(f"Updating clusters using the following parameters: eps: {eps_input}, min_samples:"
+            print(f"(Face Clustering)     - Updating clusters using the following parameters: eps: {eps_input}, min_samples:"
                   f" {min_samples_input}, min_size: ({min_width_cls_input}, {min_height_cls_input})")
 
             # Update the self values with new inputted values
@@ -629,7 +629,7 @@ class Clusteror(html.Div):
         :param data: whether to enable clickable images
         """
         if value is not None:
-            print(f"Selected cluster '{value}'")
+            print(f"(Face Clustering)     - Selected cluster '{value}'")
             # Update the images
             self.images = self.df_faces[self.df_faces["name"] == value]["img"].copy().to_list()
 
@@ -666,7 +666,7 @@ class Clusteror(html.Div):
         -   dropdown containing the clusters with which you can merge
         -   the image clicked on (empty).
         """
-        print(f"Updating remaining components in the clustering section in accordance with the selected cluster")
+        print(f"(Face Clustering)     - Updating remaining components in the clustering section in accordance with the selected cluster")
         # Reset the name of the cluster input
         value = ""
 
@@ -685,7 +685,7 @@ class Clusteror(html.Div):
         """
         # Check if the 'continue' button triggered this function
         if n_clicks is not None and n_clicks > 0:
-            print("Continuing to 'edit' mode")
+            print("(Face Clustering)     - Continuing to 'edit' mode")
             # Sort all clusters except for the currently selected cluster (items for dropdown)
             items = sort_items(np.delete(self.df_faces["name"].copy().unique(), np.where(self.df_faces["name"].copy().unique() == "0")))
 
@@ -889,7 +889,7 @@ class Clusteror(html.Div):
             if name == "":
                 name = "None"
 
-            print(f"Update name of cluster '{self.selected_cluster}' to '{name}'")
+            print(f"(Face Clustering)     - Update name of cluster '{self.selected_cluster}' to '{name}'")
             # Change the name in the dataset
             self.df_faces.loc[self.df_faces["name"] == self.selected_cluster, "name"] = f"{name}"
 
@@ -951,7 +951,7 @@ class Clusteror(html.Div):
         """
         # If 'merge' button triggered this function and the currently selected cluster is non-empty
         if n_clicks is not None and n_clicks > 0 and self.selected_cluster in self.df_faces["name"].unique():
-            print(f"Merge cluster '{self.selected_cluster}' with cluster '{cluster}'")
+            print(f"(Face Clustering)     - Merge cluster '{self.selected_cluster}' with cluster '{cluster}'")
 
             # Collect the name of the currently selected cluster
             name = self.df_faces[self.df_faces["name"] == self.selected_cluster]["name"].values[0]
@@ -1034,7 +1034,7 @@ class Clusteror(html.Div):
 
             # Update counter
             self.counter += 1
-            print(f"Adding a new cluster: {self.counter}")
+            print(f"(Face Clustering)     - Adding a new cluster: {self.counter}")
 
             # Change name of faces where the coordinates match the input coordinates
             self.df_faces["name"] = self.df_faces.apply(
@@ -1067,7 +1067,7 @@ class Clusteror(html.Div):
 
         :param data: index of image which has been clicked on
         """
-        print(f"Selected face: {data}")
+        print(f"(Face Clustering)     - Selected face: {data}")
         # Get the index of the image
         index = self.selected_index + data
 
@@ -1152,7 +1152,7 @@ class Clusteror(html.Div):
         :param index: index of image which has been clicked on
         """
         if n_clicks is not None and n_clicks > 0:
-            print(f"Move selected face to cluster '{value}'")
+            print(f"(Face Clustering)     - Move selected face to cluster '{value}'")
             # Get the index of the image
             i = self.selected_index + index
 
