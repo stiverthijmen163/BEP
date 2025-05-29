@@ -1,6 +1,7 @@
 from dash import html, dcc
 from app import app
 import dash
+import logging
 
 
 # The initial layout of the app
@@ -71,5 +72,8 @@ app.layout = html.Div(
 
 
 if __name__ == "__main__":
+    # Suppress all update prints from dash
+    logging.getLogger('werkzeug').setLevel(logging.ERROR)
+
     # Start running the app
     app.run(debug=False)
