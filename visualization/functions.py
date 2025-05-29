@@ -15,8 +15,8 @@ def img_to_base64(img: np.array) -> str:
 
     :param img: image in np format to transform
     """
-    _, buffer = cv2.imencode('.jpg', img)
-    return base64.b64encode(buffer).decode('utf-8')
+    _, buffer = cv2.imencode(".jpg", img)
+    return base64.b64encode(buffer).decode("utf-8")
 
 
 def base64_to_img(b64_string: str) -> cv2.Mat:

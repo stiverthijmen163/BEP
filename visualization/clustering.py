@@ -430,7 +430,8 @@ class Clusteror(html.Div):
                                         type="text",
                                         placeholder="Only letters and '_' allowed",
                                         value="",
-                                        style={"width": "30vw", "marginLeft": "1vw"}
+                                        style={"width": "30vw", "marginLeft": "1vw"},
+                                        maxLength=50
                                     )],
                                     style={
                                         "fontSize": "16pt",
@@ -742,7 +743,8 @@ class Clusteror(html.Div):
                                 type="text",
                                 placeholder="Only letters, spaces and '_' allowed",
                                 value="",
-                                style={"marginLeft": "10px", "width": "50%"}
+                                style={"marginLeft": "10px", "width": "50%"},
+                                maxLength=25
                             ),
                             html.Button(  # Button to change the name
                                 "Change Name",
@@ -1099,7 +1101,7 @@ class Clusteror(html.Div):
                     "objectFit": "contain"
                 }
             ),
-            html.Div(  # Allows components to be next to each other
+            html.Div([html.Div(  # Allows components to be next to each other
                 [
                     html.Label("Move to cluster:",
                                style={"fontSize": "16pt", "alignSelf": "center"}),
@@ -1136,7 +1138,52 @@ class Clusteror(html.Div):
                     "margin": "0 auto",
                     "gap": "1vw"
                 }
-            )
+            ),
+            html.P(
+                [
+                    "Move to new cluster: ",
+                    dcc.Input(  # Input for setting a new name for the cluster to move the selected face to
+                        id="name_of_new_cluster",
+                        type="text",
+                        placeholder="Only letters, spaces and '_' allowed",
+                        value="",
+                        style={"marginLeft": "10px", "width": "52%"},
+                        maxLength=25
+                    ),
+                    html.Button(  # The button which moves the face to the new cluster
+                        "Move",
+                        disabled=disabled,
+                        id="button_move1",
+                        style={
+                            "padding": "10px 0px",
+                            "fontSize": "16pt",
+                            "borderRadius": "12px",
+                            "border": "none",
+                            "backgroundColor": "#2196F3",
+                            "color": "white",
+                            "cursor": "pointer",
+                            "width": "5vw",
+                            "marginLeft": "1vw",
+                            "marginTop": "0px"
+                        }
+                    )
+                ],
+                style={
+                    "fontSize": "16pt",
+                    "marginBottom": "5px",
+                    "textAlign": "center",
+                    "margin": "0",
+                    "width": "100%"
+                },
+            )], style={
+                "display": "flex",
+                "flexDirection": "column",
+                "alignItems": "center",
+                "justifyContent": "center",
+                "margin": "0 auto",
+                "gap": "1vw",
+                "height": "100%"
+            })
         ]
 
         # Update outputs (layout)
@@ -1162,7 +1209,7 @@ class Clusteror(html.Div):
             # Move the image to the new cluster
             self.df_faces.loc[self.df_faces["id"] == img_id, "name"] = f"{value}"
 
-            # update the self images which keeps track of all images in the currently selectyed cluster
+            # Update the self images which keeps track of all images in the currently selected cluster
             self.images = self.df_faces[self.df_faces["name"] == self.selected_cluster]["img"].copy().to_list()
 
             # Update the fig
@@ -1187,10 +1234,22 @@ class Clusteror(html.Div):
                 style_left = {"width": "5%", "opacity": 0.5}
                 style_right = {"width": "5%", "opacity": 0.5}
 
-            # update outputs
-            return self.fig, [], children, new_txt, left_disabled, right_disabled, style_left, style_right
+            # Update the dropdown placeholder with the new list of clusters
+            children_main_dropdown = [dcc.Dropdown(
+                id="dropdown_cls",
+                options=sort_items(self.df_faces["name"].unique()),
+                value=self.selected_cluster,
+                clearable=False,
+                className="dropdown",
+                searchable=True,
+            )]
+
+            _, children_merge_dropdown = self.update_merge_dropdown()
+
+            # Update outputs
+            return self.fig, [], children, new_txt, left_disabled, right_disabled, style_left, style_right, children_main_dropdown, children_merge_dropdown
         # No update
-        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
     def update_displayed_images(self):

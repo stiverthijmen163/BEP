@@ -43,10 +43,11 @@ layout = html.Div(
                     children=[  # Text explaining what you can upload and the expected format
                         html.P("Click the button to select files: You can either select any number of .jpg and .png files, or one .csv file. The csv-file should contain the following:", style={"fontSize": "14pt"}),
                         html.P("- The unique name of the image as 'id'", style={"fontSize": "14pt"}),
-                        html.P("- The image as lists containing BGR-values as 'img'", style={"fontSize": "14pt"}),
+                        html.P(["- The image in base64 encoded numpy format containing BGR-values as 'img', ", html.Br(), "find out how to do that using python by clicking ",
+                                html.A("here", href="https://github.com/stiverthijmen163/BEP/blob/main/examples/example_image_to_b64.py", target="_blank", style={"color": "#1d4ed8", "textDecoration": "underline"})], style={"fontSize": "14pt"}),
                         html.P([
-                            "- Any extra information you may be interested in. This may only contain lists of strings: '['item1', 'item2']', url's must be in the 'url' column. Example: ",
-                            html.A("GitHub", href="https://github.com/stiverthijmen163/BEP/blob/main/examples/example_csv.csv", target="_blank", style={"color": "#1d4ed8", "textDecoration": "underline"}),
+                            "- Any extra information you may be interested in. This may only contain lists of strings: '['item1', 'item2']', url's must be in the 'url' column in string format. Example: ",
+                            html.A("GitHub", href="https://github.com/stiverthijmen163/BEP/blob/main/examples/example.csv", target="_blank", style={"color": "#1d4ed8", "textDecoration": "underline"}),
                         ],
                         style={"fontSize": "14pt"}),
                         dcc.Upload(  # Button to upload data
@@ -994,20 +995,43 @@ def update_click_on_image_cls(data):
     Output("box_images1_right", "disabled", allow_duplicate=True),
     Output("box_images1_left", "style", allow_duplicate=True),
     Output("box_images1_right", "style", allow_duplicate=True),
+    Output("dropdown_change", "children", allow_duplicate=True),
+    Output("dropdown_merge_change", "children", allow_duplicate=True),
     Input("button_move", "n_clicks"),
     State("dropdown_move_to_cls", "value"),
     State("update_click_on_image", "data"),
+    Input("button_move1", "n_clicks"),
+    State("name_of_new_cluster", "value"),
     prevent_initial_call=True
 )
-def move_face_to_cls(n_clicks, value, index):
+def move_face_to_cls(n_clicks0, value0, index, n_clicks1, value1):
     """
-    Callback function to move the currently selected face to the inputted cluster when the 'move'
+    Callback function to move the currently selected face to the inputted cluster when a 'move'
     button is clicked on.
 
-    :param n_clicks: number of clicks on 'move' button
-    :param value: selected cluster to move the face to
+    :param n_clicks0: number of clicks on first 'move' button
+    :param value0: selected cluster to move the face to
     :param index: index of the selected face to move
+    :param n_clicks1: number of clicks on second 'move' button
+    :param value1: inputted cluster name to move the face to
     """
+    if ctx.triggered_id == "button_move":  # Triggered by first 'move' button (use selected name)
+        n_clicks = n_clicks0
+        value = value0
+    else:  # Triggered by second 'move' button (use input-name)
+        n_clicks = n_clicks1
+
+        # Check if input meets expected format
+        if re.fullmatch(r"[A-Za-z_ ]*", value1):
+            if value1 == "":
+                value1 = "None"
+
+            # Update value to match input
+            value = f"{value1}"
+        else:  # Input does not meet requirements
+            # No update
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
     # Update outputs
     return cls0.move_face(n_clicks, value, index)
 
