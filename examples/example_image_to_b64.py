@@ -30,4 +30,4 @@ img = cv2.imread("<PATH TO IMAGE>")
 img_b64 = img_to_base64(img)
 
 # Should look like:
-# /9j/4AAQSkZJRgABAQAAAQABAAD/2w
+# /9j/4AAQSkZJRgABAQAAAQABAAD/2w...
