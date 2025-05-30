@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+from tqdm import tqdm
 
 
 def collect_data(model_name: str) -> pd.DataFrame:
@@ -50,7 +51,7 @@ def plot_cluster(data: pd.DataFrame, model: str, pca_or_tsne: str) -> None:
     :param pca_or_tsne: whether the embeddings are reduced using PCA or t-SNE
     """
     # Initialize the figure
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(12, 8))
 
     # Plot the data
     sns.scatterplot(
@@ -64,8 +65,11 @@ def plot_cluster(data: pd.DataFrame, model: str, pca_or_tsne: str) -> None:
     )
 
     # Adjust the figure as preferred
-    plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left", title="Person")
-    plt.title(f"{pca_or_tsne} of Face Embeddings by model {model}")
+    plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left", fontsize=16)
+    plt.title(f"{pca_or_tsne} of Face Embeddings by model: '{model}'", fontsize=20)
+    plt.xlabel("x", fontsize=16)
+    plt.ylabel("y", fontsize=16)
+    plt.tick_params(axis='both', which='major', labelsize=14)
     plt.tight_layout()
 
     # Create save path if needed
@@ -73,7 +77,7 @@ def plot_cluster(data: pd.DataFrame, model: str, pca_or_tsne: str) -> None:
         os.makedirs(f"plots/{pca_or_tsne}")
 
     # Save the figure
-    plt.savefig(f"plots/{pca_or_tsne}/{model}.jpg")
+    plt.savefig(f"plots/{pca_or_tsne}/{model}.pdf")
 
 
 def main_plot_embeddings() -> None:
@@ -81,7 +85,7 @@ def main_plot_embeddings() -> None:
     Main runner for plotting all different embeddings.
     """
     # Iterate over all models
-    for p in os.listdir("face_embeddings"):
+    for p in tqdm(os.listdir("face_embeddings"), ncols=100, desc="Plotting t-sne embeddings for each model and dataset"):
         if p.endswith(".npz"):
             # Set the model's name
             model = "_".join(p.split("_")[:-1]).replace("-", "_")
@@ -94,7 +98,7 @@ def main_plot_embeddings() -> None:
             df["y"] = df["embedding_tsne"].apply(lambda lst: lst[1])
 
             # Plot the t-SNE reduced embeddings
-            plot_cluster(df, p, "t-SNE")
+            plot_cluster(df, model, "t-SNE")
 
             # # Set the x and y for the PCA reduced embeddings
             # df["x"] = df["embedding_pca"].apply(lambda lst: lst[0])
