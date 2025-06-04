@@ -147,8 +147,16 @@ class Results(html.Div):
                     children=children_v_fig
                 ),
             ])
-        else:  # No additional data exists, thus no additional layout (empty)
-            children_add_info = html.Div([])
+        else:  # No additional data exists, thus no additional layout (set invisible components for callback functions)
+            children_add_info = html.Div([
+                dcc.Dropdown(
+                    id="dropdown_choose_add_data",
+                    value=None
+                ),
+                html.Div(
+                    id=f"div_{self.html_id}_v_fig",
+                )
+            ], style={"display": "none"})
 
         # Update the layout of the results section (before the additional data)
         children = [
@@ -315,7 +323,7 @@ class Results(html.Div):
         :param value: name of the selected bar
         :param dropdown_val: name of column to display additional information from
         """
-        print(f"(Results)             - Clicked on bar '{self.value}'")
+        print(f"(Results)             - Clicked on bar '{value}'")
 
         # Update self values
         self.selected_bar = value
@@ -355,7 +363,7 @@ class Results(html.Div):
 
         # Update the vertical bar chart
         title_v_bar = f"Distribution of '{dropdown_val}' for all images containing '{self.selected_cluster}' and '{self.selected_bar}'"
-        children = self.update_v_fig(dropdown_val, title_v_bar)
+        children = self.update_v_fig(dropdown_val, title_v_bar) if dropdown_val else []
 
         # Update outputs
         return images_to_display, True, right_disabled, style_left, style_right, new_txt, persons_showing_txt, children
