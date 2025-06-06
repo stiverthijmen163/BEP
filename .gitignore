@@ -15,6 +15,7 @@
 /face_clustering/face_embeddings0
 /face_clustering/plots/t-SNE
 /face_clustering/plots/DBSCAN
+visualization/*.db
 *.zip
 *.pyc
 visualization/pages/__pycache__/page2.cpython-311.pyc
