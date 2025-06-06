@@ -51,7 +51,7 @@ class Clusteror(html.Div):
         #
         # - Load the embeddings (hard-coded)
         # Load the database
-        # conn = sqlite3.connect("temp.db")
+        # conn = sqlite3.connect("temp_CFI.db")
         # query = """SELECT * FROM faces"""
         # self.df_faces = pd.read_sql_query(query, conn)
         #
@@ -59,8 +59,9 @@ class Clusteror(html.Div):
         # self.df_faces["embedding_tsne"] = self.df_faces["embedding_tsne"].apply(lambda x: np.fromstring(x, sep=","))
         # self.df_faces["embedding"] = self.df_faces["embedding"].apply(lambda x: np.fromstring(x, sep=","))
         # self.df_faces["face"] = self.df_faces["face"].apply(json.loads)
-        # self.df_faces["img"] = self.df_faces["img"].apply(json.loads)
-        # self.df_faces["img"] = self.df_faces["img"].apply(lambda x: np.array(x, dtype=np.uint8))
+        # self.df_faces["img"] = self.df_faces["img"].apply(base64_to_img)  # In case of base64 encoded
+        # self.df_faces["img"] = self.df_faces["img"].apply(json.loads)  # In case of JSON encoded image
+        # self.df_faces["img"] = self.df_faces["img"].apply(lambda x: np.array(x, dtype=np.uint8))  # JSON encoded
 
         # --------------------------------------------------- <END> ----------------------------------------------------
 
