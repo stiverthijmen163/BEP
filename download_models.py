@@ -34,7 +34,7 @@ def main_download_models() -> None:
     # Set the Google Drive url's to download zip files from
     urls = [
         "https://drive.google.com/file/d/1wU1O_NYlB0GdWRp3zQ0b9s5Nc3B57lB3/view?usp=drive_link",  # YOLO small subset
-        "https://drive.google.com/file/d/1O8aMdmPqoqdVpK3cgUpoXfui-TxIGZeg/view?usp=drive_link",  # YOLOv12-face
+        "https://drive.google.com/file/d/1O8aMdmPqoqdVpK3cgUpoXfui-TxIGZeg/view?usp=drive_link",  # YOLOv12s-face
         "https://drive.google.com/file/d/1qXsQJ8ZT42_xSmWIYy85IcidpiZudOCB/view?usp=sharing"  # InsightFace
     ]
 

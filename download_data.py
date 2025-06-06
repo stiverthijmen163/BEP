@@ -10,90 +10,76 @@ import kagglehub
 import shutil
 import zipfile
 import gdown
-
-
-# import os
-# import io
-# import requests
-# from PIL import Image
-# from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-def download_image(row, url_column, id_column, folder):
+
+def download_image(row: pd.DataFrame, url_column: str, id_column: str, folder: str) -> bool:
+    """
+    Downloads an image from a URL provided a given location in a dataframe.
+
+    :param row: row of a dataframe
+    :param url_column: column name of the URL-column
+    :param id_column: column name of the ID-column
+    :param folder: folder to save the downloaded image to
+
+    :return: whether the download was successful or not
+    """
+    # Collect the URL and save path
     url = row[url_column][2:-2]
     filename = f'{row[id_column]}.jpg'
     file_path = os.path.join(folder, filename)
 
+    # Check if file already exists
     if os.path.isfile(file_path):
         return True  # Already exists
 
+    # Try to download the image
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=10)  # Download image
         response.raise_for_status()  # Raise error if response is bad
-        image = Image.open(io.BytesIO(response.content))
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        image = Image.open(io.BytesIO(response.content))  # Try to open image
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)  # Create save path
+
+        # Save the image to the desired location
         with open(file_path, "wb") as f:
             image.save(f, "JPEG")
-        return True
+
+        return True  # Success
     except Exception:
         return False  # Error
 
 
-def download_img_from_url(dataframe, url_column, id_column, folder, max_workers=16):
+def download_img_from_url(dataframe: pd.DataFrame, url_column: str, id_column: str, folder: str, max_workers: int = 16) -> None:
+    """
+    Downloads images from all URL's in a dataframe.
+
+    :param dataframe: dataframe containing all information regarding the images to download
+    :param url_column: column name of the URL-column
+    :param id_column: column name of the ID-column
+    :param folder: folder to save the downloaded image to
+    :param max_workers: maximum number of concurrent workers (used to speed up by dividing work over all cpu workers)
+    """
+    # Create save folder if needed
     os.makedirs(folder, exist_ok=True)
 
+    # Initialize error count and list of function calls to execute
     error_count = 0
     tasks = []
 
+    # Use multiple threads
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Collect all function calls to perform (all downloads)
         for _, row in dataframe.iterrows():
             task = executor.submit(download_image, row, url_column, id_column, folder)
             tasks.append(task)
 
+        # Execute all function calls to download images
         for future in tqdm(as_completed(tasks), total=len(tasks), desc="Downloading images", ncols=100):
+            # In case of an error, update error count
             if not future.result():
                 error_count += 1
 
     print(f"Failed downloading {error_count} images")
-
-
-
-# def download_img_from_url(folder: str, dataframe: pd.DataFrame, id_column: str, url_column: str) -> None:
-#     """
-#     Downloads images from a list of URL's.
-#
-#     :param folder: folder to which image must be written
-#     :param dataframe: dataframe in which the image urls are stored
-#     :param id_column: column that holds the unique identifier of the item, to be added to the filename
-#     :param url_column: column that holds the url information, which need to be opened and scraped
-#     """
-#     # Create save folder if needed
-#     if not os.path.exists(folder):
-#         os.makedirs(folder)
-#
-#     # Initialize error counter
-#     count = 0
-#     for i, row in tqdm(dataframe.iterrows(), total=dataframe.shape[0], desc="Downloading image"):
-#         # Set variables
-#         url = row[url_column][2:-2]
-#         filename = f'{row[id_column]}.jpg'
-#         file_path = os.path.join(folder, filename)
-#
-#         # Try to download image from url
-#         try:
-#             if not os.path.isfile(file_path):
-#                 # Download image from url
-#                 image_content = requests.get(url, timeout=10).content
-#                 image_file = io.BytesIO(image_content)
-#                 image = Image.open(image_file)
-#
-#                 # Write contents on image
-#                 with open(file_path, "wb") as f:
-#                     image.save(f, "JPEG")
-#         except Exception as e:  # Add one to error counter
-#             count += 1
-#
-#     print(f"Failed downloading {count} images")
 
 
 def download_from_kaggle(kaggle_path: str, output_path: str, dataset_path: str) -> None:
@@ -117,10 +103,8 @@ def download_from_kaggle(kaggle_path: str, output_path: str, dataset_path: str) 
     # Move the data to the desired output folder
     for dataset in os.listdir(os.path.join(cache_path, "datasets", dataset_path)):
         shutil.move(os.path.join(cache_path, "datasets", dataset_path, dataset), os.path.join(output_path, dataset))
-    # shutil.move(f"{path}/{os.listdir(path)[0]}", output_path)
 
     # Remove used .cache
-    # cache_path = os.path.expanduser("~/.cache/kagglehub")
     shutil.rmtree(cache_path, ignore_errors=True)
 
 
@@ -283,23 +267,5 @@ def main_download_data() -> None:
         download_from_kaggle(k, o, d)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main_download_data()
-
-
-    # def list_all_files(folder):
-    #     return sorted([
-    #         os.path.relpath(os.path.join(root, file), start=folder)
-    #         for root, _, files in os.walk(folder)
-    #         for file in files
-    #     ])
-    #
-    #
-    # def folders_have_same_files(folder1, folder2):
-    #     files1 = list_all_files(folder1)
-    #     files2 = list_all_files(folder2)
-    #     return files1 == files2
-    #
-    #
-    # same = folders_have_same_files("data/Face-Detection-Dataset (Kaggle)", "data0/Face-Detection-Dataset (Kaggle)")
-    # print("Folders match!" if same else "Folders differ.")
