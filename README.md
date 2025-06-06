@@ -52,5 +52,5 @@ Disclaimer:
 This code is only tested on a Windows system and may not work on another system due to the code using the .cache locations from windows.
 Moreover, this repository uses at least 30GB of disk space when every file has been executed.
 
-Regarding the visualization: it has only been tested using a 1080p 19:6 screen, there may appear some glitches on other screens.
+Regarding the visualization: it has only been tested using a 1080p 16:9 screen, there may appear some glitches on other screens.
 ```
