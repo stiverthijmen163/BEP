@@ -16,7 +16,6 @@
 /face_clustering/plots/t-SNE
 /face_clustering/plots/DBSCAN
 *.zip
-/visualization/databases
 *.pyc
 visualization/pages/__pycache__/page2.cpython-311.pyc
 /.ipynb_checkpoints
