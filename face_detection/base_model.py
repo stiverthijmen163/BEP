@@ -46,8 +46,6 @@ def detect_faces_haar_cascade_recognition(img0: cv2.Mat) -> List[Sequence[int]]:
     haar_cascade_path = 'haarcascade_frontalface_default.xml'
     haar_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + haar_cascade_path)
 
-    # img = cv2.imread("data/wider_face/val/images/0_Parade_Parade_0_913.jpg")
-
     # Convert to grayscale for Haar Cascade
     gray = cv2.cvtColor(img0, cv2.COLOR_BGR2GRAY)
 

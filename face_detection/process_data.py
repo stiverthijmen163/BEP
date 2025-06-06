@@ -339,5 +339,5 @@ def main_process_data(overwrite: bool) -> None:
 
 
 if __name__ == "__main__":
-    OVERWRITE = False
+    OVERWRITE = False  # Whether to overwrite all processed data
     main_process_data(OVERWRITE)
