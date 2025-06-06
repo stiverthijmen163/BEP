@@ -1,6 +1,5 @@
 import os
 import shutil
-
 from ultralytics import YOLO
 import cv2
 from tqdm import tqdm
@@ -149,7 +148,7 @@ def main_process_data() -> None:
     # Process the data
     process_images_celebrity(image_paths)
 
-    # Remove identified faces which are no faces
+    # Remove identified faces which are no faces (checked by hand)
     ids = [
         "data/celebrity-face-image-dataset/Scarlett Johansson/077_776d5e0f_0.jpg",
         "data/celebrity-face-image-dataset/Scarlett Johansson/182_56820995_0.jpg",

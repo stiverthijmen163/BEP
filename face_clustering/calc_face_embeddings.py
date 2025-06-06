@@ -7,7 +7,6 @@ from tqdm import tqdm
 import face_recognition
 import pandas as pd
 from sklearn.manifold import TSNE
-from sklearn.decomposition import PCA
 import sqlite3
 
 
@@ -22,6 +21,7 @@ def save_embeddings(embeddings :List, image_paths: List[str], filename: str = "e
     # Save the embeddings as npz file
     np.savez_compressed(filename, embeddings=embeddings, image_paths=image_paths)
     print(f"Embeddings saved to {filename}")
+
 
 # Load embeddings and image paths
 def load_embeddings(filename: str = "embeddings.npz") -> Tuple[np.ndarray, np.ndarray]:
@@ -106,26 +106,28 @@ def extract_face_recognition_embeddings(face_paths: List[str], save_folder: str,
 
 def main_calc_face_embeddings() -> None:
     """
-    Main runner for calculating all face embeddings
+    Main runner for calculating all face embeddings for both
+    the CFI dataset and the Embedding on the Wall dataset.
     """
-    # # Folder to find all images in
-    # p = "data/celebrity-face-image-dataset"
-    #
-    # # Find all image paths in this folder
-    # image_paths = [
-    #     os.path.join(root, file).replace("\\", "/")
-    #     for root, _, files in os.walk(p)
-    #     for file in files
-    #     if file.lower().endswith((".jpg", ".jpeg", ".png"))
-    # ]
-    #
-    # # Generate the face embeddings for all images using face-recognition
-    # extract_face_recognition_embeddings(image_paths, "face_embeddings")
-    #
-    # # Generate the face embeddings for all images using different models
-    # generate_face_embeddings(image_paths, "face_embeddings")
+    # CFI dataset
+    # Folder to find all images in
+    p = "data/celebrity-face-image-dataset"
 
-    # Second dataset
+    # Find all image paths in this folder
+    image_paths = [
+        os.path.join(root, file).replace("\\", "/")
+        for root, _, files in os.walk(p)
+        for file in files
+        if file.lower().endswith((".jpg", ".jpeg", ".png"))
+    ]
+
+    # Generate the face embeddings for all images using face-recognition
+    extract_face_recognition_embeddings(image_paths, "face_embeddings")
+
+    # Generate the face embeddings for all images using different models
+    generate_face_embeddings(image_paths, "face_embeddings")
+
+    # Embedding on the Wall dataset
     # Folder to find all images in
     p = "../data/Embedding_On_The_Wall/svc_classification_corrected"
 
@@ -137,7 +139,6 @@ def main_calc_face_embeddings() -> None:
         for file in files
         if file.lower().endswith((".jpg", ".jpeg", ".png"))
     ]
-    # print(image_paths)
 
     # Generate the face embeddings for all images using face-recognition
     extract_face_recognition_embeddings(image_paths, "face_embeddings", ds="Wies")
@@ -168,10 +169,6 @@ def main_process_face_embeddings() -> None:
             tsne = TSNE(n_components=2)
             emb_tsne = tsne.fit_transform(emb)
 
-            # Reduce embeddings by using PCA
-            # pca = PCA(n_components=2)
-            # emb_pca = pca.fit_transform(emb)
-
             # Collect the name of the model used for page name
             model = "_".join(p.split("_")[:-1]).replace("-", "_")
 
@@ -179,7 +176,6 @@ def main_process_face_embeddings() -> None:
             res = pd.DataFrame({
                 "id_path": paths,
                 "embedding": [",".join(map(str, e.tolist())) for e in emb],
-                # "embedding_pca": [",".join(map(str, e.tolist())) for e in emb_pca],
                 "embedding_tsne": [",".join(map(str, e.tolist())) for e in emb_tsne],
             })
 
@@ -202,6 +198,7 @@ def main_process_face_embeddings() -> None:
     # save df to SQL database
     res.to_sql("persons", conn, if_exists="replace")
 
+
 if __name__ == "__main__":
-    # main_calc_face_embeddings()
+    # main_calc_face_embeddings()  # Uncomment to re-embed the faces
     main_process_face_embeddings()

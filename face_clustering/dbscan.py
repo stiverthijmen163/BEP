@@ -1,39 +1,36 @@
-from typing import Tuple
 import numpy as np
 import pandas as pd
 from sklearn import metrics
 from sklearn.cluster import DBSCAN
 from explore_embeddings import collect_data
 from sklearn.metrics import adjusted_rand_score
-from sklearn.metrics.cluster import fowlkes_mallows_score
 import openpyxl  # Needed for writing xlsx files
 from tqdm import tqdm
 import warnings
+import time
 
 # Filter out the FutureWarnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
-def check_performance_dbscan(df: pd.DataFrame) -> Tuple[float, float]:
+def check_performance_dbscan(df: pd.DataFrame) -> float:
     """
     Uses performance metrics to check the performance or clustering algorithms.
 
     :param df: dataframe containing the actual and predicted clusters
 
-    :return: the adjusted rand score and fowlkes mallows score
+    :return: the adjusted rand score
     """
     # Similarity between two clustering algorithms
     ari = adjusted_rand_score(df["person"], df["cluster"])
 
-    # sqrt(precision*recall)
-    # fmi = fowlkes_mallows_score(df["person"], df["cluster"])
-
-    return ari#, fmi
+    return ari
 
 
 def main_test_embeddings_dbscan(dataset: str = None) -> None:
     """
-    Main runner for testing different embeddings with different parameters for clustering.
+    Main runner for testing different embeddings with
+    different parameters for clustering using the DBSCAN algorithm.
 
     :param dataset: name of the dataset
     """
@@ -41,16 +38,12 @@ def main_test_embeddings_dbscan(dataset: str = None) -> None:
     ebsilons = [i*0.1 for i in range(1, 101)]
 
     # Iterables to create df with
-    # if dataset is None:
     models = ["ArcFace", "Dlib", "Facenet", "face_recognition", "VGG_Face"]
-    # else:
-    #     models = [f"ArcFace", f"{dataset}_Dlib", f"{dataset}_Facenet", f"{dataset}_face_recognition", f"{dataset}_VGG_Face"]
     dbscan_params = ["eps"]
-    # metrics = ["ARI", "FMI", "rel"]
-    metrics = ["ARI", "rel"]
+    metric = ["ARI", "rel"]
 
     # Create multi-indexed columns for dataframe
-    multi_cols = pd.MultiIndex.from_product([models, metrics])
+    multi_cols = pd.MultiIndex.from_product([models, metric])
     all_columns = pd.MultiIndex.from_tuples([("params", p) for p in dbscan_params] + list(multi_cols))
     result = pd.DataFrame(columns=all_columns)
 
@@ -82,7 +75,6 @@ def main_test_embeddings_dbscan(dataset: str = None) -> None:
 
             # Append the performance metrics to the result
             res.append(ari)
-            # res.append(fmi)
             res.append(len(np.unique(labels)) - 17)
 
         # Add the resulting row to the final dataframe
@@ -94,14 +86,7 @@ def main_test_embeddings_dbscan(dataset: str = None) -> None:
     # Save the result
     result.to_excel(f"{f'{dataset}_' if dataset else ''}results_dbscan_parameters.xlsx")
 
-    # for col in result.columns:
-    #     print(col)
-    #     if col[1] == "eps":
-    #         result0[col[0]][col[1]] = result[col[0]][col[1]].copy().round(1)
-    #     elif col[1] == "rel":
-    #         result0[col[0]][col[1]] = result[col[0]][col[1]].copy().round(0)
-    #     else:
-    #         result0[col[0]][col[1]] = result[col[0]][col[1]].copy().round(3)
+    # Transform columns to strings for latex table
     for col in result.columns:
         if col[1] == "rel":
             result.loc[:, col] = result[col].astype(int).astype(str)
@@ -110,17 +95,44 @@ def main_test_embeddings_dbscan(dataset: str = None) -> None:
         else:
             result.loc[:, col] = result[col].apply(lambda x: f"{x:.1f}")
 
+    # transform dataframe to latex
     txt = result.to_latex(index=False, multirow=True,
         multicolumn=True,
-        escape=False,    # Set to False if you want to allow LaTeX code in cell content
-        bold_rows=True, # Makes index values bold (optional)
+        escape=False,
+        bold_rows=True,
         column_format="c|ll|ll|ll|ll|ll",
     )
 
+    # Write latex table to file
     with open(f"{f'{dataset}_' if dataset else ''}latex_results_dbscan_parameters.txt", "w") as f:
         f.write(txt)
 
 
 if __name__ == "__main__":
+    # Test DBSCAN with different parameters for both the CFI and Embedding on the Wall dataset
     main_test_embeddings_dbscan()
     main_test_embeddings_dbscan("Wies")
+
+
+    # Check for runtime using the best model
+    # Load CFI embeddings
+    data = collect_data("face_recognition")
+    embeddings = np.array(data["embedding_tsne"].tolist())
+
+    # calculate time needed
+    start = time.time()
+    DBSCAN(eps=5.4, min_samples=1, n_jobs=-1, metric="euclidean").fit_predict(embeddings)
+    end = time.time()
+
+    print(f"Latency for CFI dataset: {end - start}")  # = 0.060s
+
+    # Load Embedding on the Wall embeddings
+    data = collect_data("Wies_face_recognition")
+    embeddings = np.array(data["embedding_tsne"].tolist())
+
+    # Calculate time needed
+    start = time.time()
+    DBSCAN(eps=2.3, min_samples=1, n_jobs=-1, metric="euclidean").fit_predict(embeddings)
+    end = time.time()
+
+    print(f"Latency for Embedding on the Wall dataset: {end - start}")  # = 0.022s

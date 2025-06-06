@@ -10,11 +10,13 @@
 /face_detection/yolo_v12s
 /data0
 /face_detection/data0
-/face_clustering/face_embeddings
+/face_clustering/face_embeddings/data.db
 /face_clustering/data
 /face_clustering/face_embeddings0
-/face_clustering/plots
+/face_clustering/plots/t-SNE
+/face_clustering/plots/DBSCAN
 *.zip
 /visualization/databases
 *.pyc
 visualization/pages/__pycache__/page2.cpython-311.pyc
+/.ipynb_checkpoints
