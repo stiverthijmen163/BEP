@@ -49,7 +49,7 @@ def download_image(row: pd.DataFrame, url_column: str, id_column: str, folder: s
         return False  # Error
 
 
-def download_img_from_url(dataframe: pd.DataFrame, url_column: str, id_column: str, folder: str, max_workers: int = 16) -> None:
+def download_img_from_url(dataframe: pd.Series, url_column: str, id_column: str, folder: str, max_workers: int = 16) -> None:
     """
     Downloads images from all URL's in a dataframe.
 
