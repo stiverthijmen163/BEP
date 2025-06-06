@@ -45,6 +45,7 @@ Execute `face_clustering/chinese_whispers_model.py` to do the same using the Chi
 
 ## Interactive Visualization [Yes]
 Execute `visualization/index.py` to start the interactive visualization. It is advised to test all functionalities you want to use with a small set of images to ensure you have everything correctly setup.
+For using the 'New Data' page, a csv-file has been created which is stored at `visualization/data/embedding_on_the_wall.csv`
 
 ```
 Disclaimer:
