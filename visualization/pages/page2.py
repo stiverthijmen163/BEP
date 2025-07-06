@@ -1,5 +1,6 @@
 import dash
 from dash import html, register_page, dcc, callback, Input, Output, State
+from dash.exceptions import PreventUpdate
 from visualization.functions import *
 from visualization.choose_face import ChooseFaceSection
 from visualization.explore_selected_cluster import ExploreSelectedCluster
@@ -46,7 +47,6 @@ layout = html.Div([
                             html.Label("Choose database:", style={"fontSize": "16pt"}),
                             dcc.Dropdown(  # All db options
                                 id="dropdown_choose_database",
-                                options=sort_items(os.listdir("databases")),
                                 value=None,
                                 clearable=False,
                                 className="dropdown",
@@ -148,6 +148,27 @@ def read_database(database_name: str) -> List[str]:
 
     # Return the list of errors
     return error_txt
+
+
+@callback(
+    Output("dropdown_choose_database", "options"),
+    Input("url", "pathname"),
+)
+def update_databases_dropdown(pathname):
+    """
+    Callback function that updates the list of available databases every time the 'Visualization' page is refreshed.
+
+    :param pathname: pathname of the currently accessed page
+    """
+    # Check if 'Visualization' page is accessed/refreshed
+    if pathname == "/page2":
+        # Collect available databases
+        options = os.listdir("databases")
+
+        # Update output
+        return sorted(options)
+    # No update
+    raise PreventUpdate
 
 
 @callback(

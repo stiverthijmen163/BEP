@@ -49,8 +49,10 @@ For using the 'New Data' page, a csv-file has been created which is stored at `v
 
 ```
 Disclaimer:
-This code is only tested on a Windows system and may not work on another system due to the code using the .cache locations from windows.
+This code is only tested on a Windows system and may not work on another system due to the code using the .cache locations from Windows.
 Moreover, this repository uses at least 30GB of disk space when every file has been executed.
 
 Regarding the visualization: it has only been tested using a 1080p 16:9 screen, there may appear some glitches on other screens.
+
+Tested using Python 3.11 and Python 3.12
 ```
